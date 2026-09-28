@@ -15,5 +15,4 @@ CPMAddPackage(NAME yaodaq
               GIT_SHALLOW TRUE
               GIT_REPOSITORY "${YAODAQ_REPOSITORY}"
               GIT_TAG "${YAODAQ_TAG}"
-              OPTIONS "YAODAQ_EXAMPLES FALSE"
-              )
+              OPTIONS "YAODAQ_EXAMPLES FALSE")

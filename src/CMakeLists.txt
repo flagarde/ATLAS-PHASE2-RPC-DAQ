@@ -13,6 +13,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(csv)
 
 find_package(ROOT)
+find_package(PcapPlusPlus REQUIRED)
 
 add_library(Data SHARED)
 target_compile_features(Data PUBLIC cxx_std_20)
@@ -24,6 +25,12 @@ target_link_libraries(FileWriter PRIVATE Data yaodaq::yaodaq spdlog::spdlog CLI1
 target_include_directories(FileWriter PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
 install(TARGETS FileWriter RUNTIME DESTINATION bin)
 
+add_executable(DCTEthernetFileWriter DCTEthernetFileWriter.cpp)
+target_link_libraries(DCTEthernetFileWriter PRIVATE simdjson::simdjson yaodaq::yaodaq spdlog::spdlog CLI11::CLI11 cpp-terminal::cpp-terminal ROOT::Tree ROOT::Core ROOT::RIO ROOT::ROOTNTuple)
+# Attach dictionaries to the executable. First, tell it where to look for headers required by the dictionaries:
+target_include_directories(DCTEthernetFileWriter PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
+install(TARGETS DCTEthernetFileWriter RUNTIME DESTINATION bin)
+
 add_executable(Analysor Analysor.cpp)
 target_link_libraries(Analysor PRIVATE yaodaq::yaodaq Data spdlog::spdlog  CLI11::CLI11 cpp-terminal::cpp-terminal ROOT::RHTTP ROOT::Net ROOT::Core ROOT::RIO ROOT::Hist ROOT::Gpad)
 install(TARGETS Analysor RUNTIME DESTINATION bin)
@@ -33,8 +40,24 @@ target_link_libraries(RPCAnalyzer PRIVATE yaodaq::yaodaq spdlog::spdlog  Data CL
 install(TARGETS RPCAnalyzer RUNTIME DESTINATION bin)
 
 add_executable(DCT DCT.cpp)
-target_link_libraries(DCT PRIVATE csv yaodaq::yaodaq spdlog::spdlog  yaodaq::transport::process CLI11::CLI11 cpp-terminal::cpp-terminal)
+target_link_libraries(DCT PRIVATE csv yaodaq::yaodaq spdlog::spdlog yaodaq::transport::process CLI11::CLI11 cpp-terminal::cpp-terminal)
 install(TARGETS DCT RUNTIME DESTINATION bin)
+set_target_properties(DCT PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+target_include_directories(DCT PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
+
+add_executable(DCTEthernet DCTEthernet.cpp)
+target_link_libraries(DCTEthernet PRIVATE yaodaq::yaodaq spdlog::spdlog PcapPlusPlus::Pcap++ yaodaq::transport::process CLI11::CLI11 cpp-terminal::cpp-terminal)
+install(TARGETS DCTEthernet RUNTIME DESTINATION bin)
+set_target_properties(DCTEthernet PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+target_include_directories(DCTEthernet PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
+## run sudo setcap cap_net_raw,cap_net_admin=eip ./install/bin/DCT
+
+add_executable(DCTEthernetAnalysor DCTEthernetAnalysor.cpp)
+target_link_libraries(DCTEthernetAnalysor PRIVATE yaodaq::yaodaq spdlog::spdlog PcapPlusPlus::Pcap++
+                                                ROOT::RHTTP ROOT::Net ROOT::Core ROOT::RIO ROOT::Tree ROOT::ROOTNTuple ROOT::Gpad ROOT::Hist yaodaq::transport::process CLI11::CLI11 cpp-terminal::cpp-terminal)
+install(TARGETS DCTEthernetAnalysor RUNTIME DESTINATION bin)
+set_target_properties(DCTEthernetAnalysor PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+target_include_directories(DCTEthernetAnalysor PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
 
 set(DESTINATION_DIR "${PROJECT_BINARY_DIR}/firmwares")
 set(FIRMWARE_URLS
@@ -64,20 +87,20 @@ set(FIRMWARE_FILES
     "${DESTINATION_DIR}/KCU116/daq_kcu116_sha_1f11706.bit"
     "${DESTINATION_DIR}/KCU116/daq_kcu116_sha_1f11706.ltx"
 )
-set(FIRMWARE_SHA256S)
-list(LENGTH FIRMWARE_URLS URL_COUNT)
-math(EXPR LAST_INDEX "${URL_COUNT} - 1")
-foreach(INDEX RANGE ${LAST_INDEX})
-  list(GET FIRMWARE_URLS ${INDEX} URL)
-  list(GET FIRMWARE_FILES ${INDEX} FILE)
-  if(NOT EXISTS "${FILE}")
-    message(STATUS "Downloading ${URL}")
-    file(DOWNLOAD "${URL}" "${FILE}" STATUS DOWNLOAD_STATUS SHOW_PROGRESS)
-    list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
-    if(NOT STATUS_CODE EQUAL 0)
-      message(FATAL_ERROR "Failed to download ${URL}: ${DOWNLOAD_STATUS}")
-    endif()
-  endif()
-endforeach()
+#set(FIRMWARE_SHA256S)
+#list(LENGTH FIRMWARE_URLS URL_COUNT)
+#math(EXPR LAST_INDEX "${URL_COUNT} - 1")
+#foreach(INDEX RANGE ${LAST_INDEX})
+#  list(GET FIRMWARE_URLS ${INDEX} URL)
+#  list(GET FIRMWARE_FILES ${INDEX} FILE)
+#  if(NOT EXISTS "${FILE}")
+#    message(STATUS "Downloading ${URL}")
+#    file(DOWNLOAD "${URL}" "${FILE}" STATUS DOWNLOAD_STATUS SHOW_PROGRESS)
+#    list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+#    if(NOT STATUS_CODE EQUAL 0)
+#      message(FATAL_ERROR "Failed to download ${URL}: ${DOWNLOAD_STATUS}")
+#    endif()
+#  endif()
+#endforeach()
 # Install all downloaded binaries
-install(FILES ${FIRMWARE_FILES} DESTINATION bin/firmwares)
+#install(FILES ${FIRMWARE_FILES} DESTINATION bin/firmwares)
