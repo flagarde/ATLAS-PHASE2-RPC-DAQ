@@ -26,7 +26,7 @@ target_include_directories(FileWriter PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE
 install(TARGETS FileWriter RUNTIME DESTINATION bin)
 
 add_executable(DCTEthernetFileWriter DCTEthernetFileWriter.cpp)
-target_link_libraries(DCTEthernetFileWriter PRIVATE simdjson::simdjson yaodaq::yaodaq spdlog::spdlog CLI11::CLI11 cpp-terminal::cpp-terminal ROOT::Tree ROOT::Core ROOT::RIO ROOT::ROOTNTuple)
+target_link_libraries(DCTEthernetFileWriter PRIVATE simdjson::simdjson EthernetAnalysor yaodaq::yaodaq spdlog::spdlog CLI11::CLI11 cpp-terminal::cpp-terminal ROOT::Tree ROOT::Core ROOT::RIO ROOT::ROOTNTuple)
 # Attach dictionaries to the executable. First, tell it where to look for headers required by the dictionaries:
 target_include_directories(DCTEthernetFileWriter PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
 install(TARGETS DCTEthernetFileWriter RUNTIME DESTINATION bin)
@@ -52,11 +52,14 @@ set_target_properties(DCTEthernet PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREF
 target_include_directories(DCTEthernet PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
 ## run sudo setcap cap_net_raw,cap_net_admin=eip ./install/bin/DCT
 
+add_library(EthernetAnalysor STATIC EthernetAnalysor.cpp)
+target_link_libraries(EthernetAnalysor PRIVATE yaodaq::yaodaq spdlog::spdlog fmt::fmt ROOT::RHTTP ROOT::Net ROOT::Core ROOT::RIO ROOT::Tree ROOT::ROOTNTuple ROOT::Gpad ROOT::Hist )
+target_include_directories(EthernetAnalysor PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
+
 add_executable(DCTEthernetAnalysor DCTEthernetAnalysor.cpp)
-target_link_libraries(DCTEthernetAnalysor PRIVATE yaodaq::yaodaq spdlog::spdlog PcapPlusPlus::Pcap++
+target_link_libraries(DCTEthernetAnalysor PRIVATE EthernetAnalysor yaodaq::yaodaq spdlog::spdlog PcapPlusPlus::Pcap++
                                                 ROOT::RHTTP ROOT::Net ROOT::Core ROOT::RIO ROOT::Tree ROOT::ROOTNTuple ROOT::Gpad ROOT::Hist yaodaq::transport::process CLI11::CLI11 cpp-terminal::cpp-terminal)
 install(TARGETS DCTEthernetAnalysor RUNTIME DESTINATION bin)
-set_target_properties(DCTEthernetAnalysor PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 target_include_directories(DCTEthernetAnalysor PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
 
 set(DESTINATION_DIR "${PROJECT_BINARY_DIR}/firmwares")

@@ -27,12 +27,13 @@ public:
   // It is DCT channel not strip !!!!
   std::uint8_t  get_channel() const noexcept { return channel; }
   std::uint32_t get_bcid() const noexcept { return bcid; }
+  std::uint8_t  get_dct() const noexcept { return dct; }
   bool          is_trigger() const noexcept { return get_channel() == trigger_channel; }
   bool          is_hit() const noexcept { return !is_trigger(); }
   std::int16_t  get_eta1_fine_time() const noexcept { return eta1_time; }
   std::int16_t  get_eta2_fine_time() const noexcept { return eta2_time; }
-  double        get_eta1_fine_time_ns() const noexcept { return eta1_time * m_tick_time; }
-  double        get_eta2_fine_time_ns() const noexcept { return eta2_time * m_tick_time; }
+  double        get_eta1_fine_time_ns() const noexcept { return eta1_time - 1 * m_tick_time; }
+  double        get_eta2_fine_time_ns() const noexcept { return eta2_time - 1 * m_tick_time; }
   bool          has_both_side() const noexcept
   {
     return ( eta1_time >= 1 && eta2_time >= 1 );  //0 means no time recorded
@@ -43,14 +44,19 @@ public:
   DecodedRawData( const std::uint32_t word, const std::uint32_t out_bcid ) noexcept : output_bcid( out_bcid )
   {
     setRise( word );  // Must be first;
+    setDCT( word );
     setChannel( word );
     setBCID( word );
     setEta1Time( word );
     setEta2Time( word );
   }
+  void                          setClock( const std::uint8_t clk ) { clock = clk; }
+  std::uint8_t                  getClock() const noexcept { return clock; }
+  static constexpr std::uint8_t trigger_channel{ 143 };
 
 private:
   void setRise( const std::uint32_t word ) noexcept { rise = word & 0x1; }
+  void setDCT( const std::uint32_t word ) noexcept { dct = word >> 28 & 0xF; }
   void setChannel( const std::uint32_t word ) noexcept { channel = ( word >> 20 ) & 0xFF; }
   void setBCID( const std::uint32_t word ) noexcept
   {
@@ -66,18 +72,19 @@ private:
   }
   void setEta2Time( const std::uint32_t word ) noexcept
   {
-    if( rise ) eta2_time = ( word >> 1 ) & 0x1F;
+    if( rise ) eta2_time = ( word >> 1 ) & 0x3F;
     else
       eta2_time = ( word >> 1 ) & 0x1F;
   }
-  static constexpr std::uint8_t trigger_channel{ 143 };
-  static constexpr double       m_tick_time{ 0.833 };  //ns
-  std::uint32_t                 output_bcid{ 0 };
-  bool                          rise{ false };
-  std::uint8_t                  channel{ 0 };
-  std::uint32_t                 bcid{ 0 };
-  std::uint16_t                 eta1_time{ 0 };
-  std::uint16_t                 eta2_time{ 0 };
+  static constexpr double m_tick_time{ 0.833 };  //ns
+  std::uint32_t           output_bcid{ 0 };
+  bool                    rise{ false };
+  std::uint8_t            channel{ 0 };
+  std::uint32_t           bcid{ 0 };
+  std::uint8_t            dct{ 0 };
+  std::uint16_t           eta1_time{ 0 };
+  std::uint16_t           eta2_time{ 0 };
+  std::uint8_t            clock{ 0 };
 };
 
 class IntermediateEvent
