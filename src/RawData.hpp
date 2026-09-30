@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <iostream>
 #include <vector>
 
 namespace DCT
@@ -56,7 +57,7 @@ public:
 
 private:
   void setRise( const std::uint32_t word ) noexcept { rise = word & 0x1; }
-  void setDCT( const std::uint32_t word ) noexcept { dct = word >> 28 & 0xF; }
+  void setDCT( const std::uint32_t word ) noexcept { dct = ( word >> 28 ) & 0xF; }
   void setChannel( const std::uint32_t word ) noexcept { channel = ( word >> 20 ) & 0xFF; }
   void setBCID( const std::uint32_t word ) noexcept
   {

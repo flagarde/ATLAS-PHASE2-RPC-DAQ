@@ -54,8 +54,11 @@ public:
     info( "Interface MTU: {}", m_ethernet.mtu() );
     info( "DNS server: {}", m_ethernet.defaultGateway() );
     Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
+    //if( !spy )
+    // {
     if( !configure_dct() ) return false;
     if( !configure_board() ) return false;
+    //}
     Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
     return true;
   }
@@ -70,6 +73,7 @@ public:
       std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
       info( "Connecting..." );
     }
+
     connect_finished.store( false );
     warn( "Connecting step finished !" );
     return true;
@@ -414,7 +418,6 @@ public:
       error( "m_ethernet.start() failed" );
       return false;
     }
-
     if( self_trigger ) startTriggers();
     return true;
   }
@@ -466,6 +469,30 @@ public:
       return;
     }
     if( eth1->getLayerPayloadSize() < 2 || eth2->getLayerPayloadSize() < 2 ) return;
+    /*
+    auto printHex = [](const uint8_t* data, std::size_t size)
+{
+    std::string out;
+    out.reserve(size * 3);
+
+    for (std::size_t i = 0; i < size; ++i)
+    {
+        fmt::format_to(std::back_inserter(out), "{:02X} ", data[i]);
+    }
+
+    return out;
+};
+info(
+    "****************\n{}\n{}\n************",
+    printHex(
+        reinterpret_cast<const uint8_t*>(eth1->getLayerPayload()) + 1,
+        eth1->getLayerPayloadSize() - 1
+    ),
+    printHex(
+        reinterpret_cast<const uint8_t*>(eth2->getLayerPayload()) + 1,
+        eth2->getLayerPayloadSize() - 1
+    )
+);*/
 
     thread_local std::string json;
     json.clear();
@@ -481,11 +508,14 @@ public:
 
     bool first = true;
 
-    for( std::size_t pos = 2; pos + sizeof( std::uint32_t ) <= eth1->getLayerPayloadSize(); pos += sizeof( std::uint32_t ) )
-    {
-      std::uint32_t word{ 0 };
+    auto* payload = static_cast<const std::uint8_t*>( eth1->getLayerPayload() );
 
-      std::memcpy( &word, eth1->getLayerPayload() + pos, sizeof( word ) );
+    std::size_t size = eth1->getLayerPayloadSize();
+
+    // Skip the first byte: 0a
+    for( std::size_t pos = 1; pos + sizeof( std::uint32_t ) <= size; pos += sizeof( std::uint32_t ) )
+    {
+      const std::uint32_t word = ( std::uint32_t( payload[pos + 0] ) << 24 ) | ( std::uint32_t( payload[pos + 1] ) << 16 ) | ( std::uint32_t( payload[pos + 2] ) << 8 ) | std::uint32_t( payload[pos + 3] );
 
       if( !first ) json += ',';
 
@@ -505,41 +535,27 @@ public:
 
     first = true;
 
-    for( std::size_t pos = 2; pos + sizeof( std::uint32_t ) <= eth2->getLayerPayloadSize(); pos += sizeof( std::uint32_t ) )
+    payload = static_cast<const std::uint8_t*>( eth2->getLayerPayload() );
+    size    = eth2->getLayerPayloadSize();
+
+    // Skip the first byte: 0a
+    for( std::size_t pos = 1; pos + sizeof( std::uint32_t ) <= size; pos += sizeof( std::uint32_t ) )
     {
-      std::uint32_t word{ 0 };
+      const std::uint32_t word = ( std::uint32_t( payload[pos + 0] ) << 24 ) | ( std::uint32_t( payload[pos + 1] ) << 16 ) | ( std::uint32_t( payload[pos + 2] ) << 8 ) | std::uint32_t( payload[pos + 3] );
 
-      std::memcpy( &word, eth2->getLayerPayload() + pos, sizeof( word ) );
+      if( !first ) json += ',';
 
-      if( ( word & 0x0FFFFFFF ) != 0x05555555 )
-      {
-        if( !first ) json += ',';
+      json += '"';
+      json += std::format( "0x{:08x}", word );
+      json += '"';
 
-        json += '"';
-        json += std::format( "0x{:08x}", word );
-        json += '"';
-
-        first = false;
-      }
+      first = false;
     }
 
     json += "]}";
     json += "]}";
 
     send( yaodaq::RawDataBuilder::from_text( json, eth1->getSourceMac().toString() ) );
-    //std::cout<<json<<std::endl;
-    /*for (std::size_t pos = 2; pos + sizeof(std::uint32_t) <= eth1->getLayerPayloadSize(); pos += sizeof(std::uint32_t))
-  {
-    std::uint32_t word{0};
-    std::memcpy(&word, eth1->getLayerPayload() + pos, sizeof(word));
-    if ((word & 0x0FFFFFFF) != 0x05555555) info("0x{:08x}", word);
-  }
-  for (std::size_t pos = 2; pos + sizeof(std::uint32_t) <= eth1->getLayerPayloadSize(); pos += sizeof(std::uint32_t))
-  {
-    std::uint32_t word{0};
-    std::memcpy(&word, eth2->getLayerPayload() + pos, sizeof(word));
-    if ((word & 0x0FFFFFFF) != 0x05555555) info("0x{:08x}", word);
-  }*/
   }
 
   std::vector<std::string> splitMessage( const std::string_view message )
@@ -563,6 +579,7 @@ public:
     info( "pre_disconnect()" );
     m_ethernet.stop();
     m_ethernet.close();
+
     sendCommand( "close_hw_target" );
     sendCommand( "disconnect_hw_server" );
     sendCommand( "close_hw_manager" );
@@ -573,10 +590,12 @@ public:
       std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
       warn( "Waiting disconnect step to finish !" );
     }
+
     disconnect_finished.store( false );
     Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
     return true;
   }
+  void setSpy( bool sp ) { spy = sp; }
 
 private:
   std::filesystem::path m_firmwares_path;
@@ -587,6 +606,7 @@ private:
   std::string           m_ethernet_name;
   std::string           m_mac_adress;
   bool                  self_trigger{ false };
+  bool                  spy{ false };
 
   std::atomic<bool> board_finished{ false };
   std::atomic<bool> dct_finished{ false };

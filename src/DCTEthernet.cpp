@@ -51,6 +51,8 @@ int main( int argc, char* argv[] )
   app.add_option( "--mac", mac_address, "mac address" );
   bool self_trigger{ false };
   app.add_flag( "--self", self_trigger, "Use self triggering" );
+  bool spy{ false };
+  app.add_flag( "--spy", spy, "Just spy" );
 
   try
   {
@@ -75,6 +77,7 @@ int main( int argc, char* argv[] )
   board.setMacAdress( mac_address );
   board.setMaxEvents( nbr_event );
   board.setSelfTrigger( self_trigger );
+  board.setSpy( spy );
   board.dispatcher().subscribe<yaodaq::RawData>(
     [&board]( const yaodaq::RawData& msg )
     {

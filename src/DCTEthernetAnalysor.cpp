@@ -114,13 +114,17 @@ public:
     return true;
   }
 
-  bool on_start() override { return true; }
+  bool on_start() override
+  {
+    clear();
+    return true;
+  }
 
   void clear()
   {
     warn( "Clearing histograms" );
     reset_event();
-    //m_analyse.reset();
+    m_analyse.clear_all();
     Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );  //ROOT is doing bad stufs
   }
 

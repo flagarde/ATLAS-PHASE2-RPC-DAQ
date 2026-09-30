@@ -41,8 +41,7 @@ public:
 
   bool on_stop() override
   {
-    analysor.close_raw_file();
-    analysor.close_events_file();
+    analysor.clear_all();
     return true;
   }
 
@@ -122,8 +121,6 @@ public:
       std::uint8_t clk{ 0 };
       for( auto packet: doc["packets"].get_array() )
       {
-        //std::string_view packet_number = packet["packet_number"].get_string();
-        //std::cout << "packet_number: " << packet_number << '\n';
         for( auto value: packet["data"].get_array() )
         {
           const std::string_view hex_value = value.get_string();

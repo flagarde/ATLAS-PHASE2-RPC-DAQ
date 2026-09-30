@@ -71,6 +71,48 @@ public:
     raw_tree->Branch( "hit_rise", &hit_rise );
   }
 
+  void clear_all()
+  {
+    clear_raw_data();
+    clear_events_data();
+    tot_eta_p_ly0_2D->Reset();
+    tot_eta_p_ly1_2D->Reset();
+    tot_eta_p_ly2_2D->Reset();
+    tot_eta_m_ly0_2D->Reset();
+    tot_eta_m_ly1_2D->Reset();
+    tot_eta_m_ly2_2D->Reset();
+    tot_eta_p_ly0_1D->Reset();
+    tot_eta_p_ly1_1D->Reset();
+    tot_eta_p_ly2_1D->Reset();
+    tot_eta_m_ly0_1D->Reset();
+    tot_eta_m_ly1_1D->Reset();
+    tot_eta_m_ly2_1D->Reset();
+    dt_trig_vs_strip_eta_p->Reset();
+    dt_trig_vs_strip_eta_m->Reset();
+    strips_eta_p_layer0->Reset();
+    strips_eta_p_layer1->Reset();
+    strips_eta_p_layer2->Reset();
+    strips_eta_m_layer0->Reset();
+    strips_eta_m_layer1->Reset();
+    strips_eta_m_layer2->Reset();
+    trig_evts = 0;
+    // Efficiency stufs
+    for( std::size_t l = 0; l < 3; l++ )
+    {
+      hEff1[l]->Clear();
+      evts_eta_p[l] = 0;
+      evts_eta_m[l] = 0;
+      evts_or[l]    = 0;
+      evts_and[l]   = 0;
+
+      evts_eta_p_rpc_trig[l] = 0;
+      evts_eta_m_rpc_trig[l] = 0;
+      evts_OR_rpc_trig[l]    = 0;
+      evts_AND_rpc_trig[l]   = 0;
+      evts_rpc_trig_denom[l] = 0;
+    }
+  }
+
   void clear_raw_data()
   {
     hit_dct.clear();
@@ -291,8 +333,8 @@ public:
       }
     }
 
-    bool eta_p_hit_flag[3] = { 0, 0, 0 };
-    bool eta_m_hit_flag[3] = { 0, 0, 0 };
+    bool eta_p_hit_flag[3] = { false, false, false };
+    bool eta_m_hit_flag[3] = { false, false, false };
 
     std::vector<int> hit_used1( nHits, 0 );
     std::vector<int> hit_used2( nHits, 0 );
