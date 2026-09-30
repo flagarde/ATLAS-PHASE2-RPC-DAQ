@@ -68,8 +68,7 @@ The server must be started for all modules to be aware of each others. The other
 its IP address and port.
 
 
-1. START THE YAODAQ SERVER
-==========================
+## START THE YAODAQ SERVER
 
 Run the server on the computer that will host the DAQ server:
 ```bash
@@ -84,8 +83,7 @@ For all available options:
 ./install/YAODAQServer --help
 ```
 
-2. START DCTETHERNET
-====================
+## START DCTETHERNET
 
 DCTEthernet is responsible for communicating with the DCT and optical board
 over Ethernet.
@@ -119,8 +117,7 @@ cap_net_raw allows raw packet/socket operations, while cap_net_admin provides
 additional network administration privileges.
 
 
-3. START THE REAL-TIME ANALYZER
-===============================
+## START THE REAL-TIME ANALYZER
 
 DCTEthernetAnalysor provides real-time plotting and monitoring.
 
@@ -139,8 +136,7 @@ For example, if the server uses port 5000, the analyzer is available on:
     http://localhost:5001
 
 
-4. START THE FILE WRITER
-========================
+## START THE FILE WRITER
 
 DCTEthernetFileWriter is responsible for writing acquired data to files.
 
@@ -153,8 +149,7 @@ For available options:
 ./install/DCTEthernetFileWriter --help
 ```
 
-5. START THE YAODAQ CONTROLLER
-==============================
+## START THE YAODAQ CONTROLLER
 
 YAODAQController coordinates the different DAQ modules.
 
@@ -167,6 +162,16 @@ Use the same server IP and port.
 The controller provides an interface from which the different DAQ states
 can be controlled.
 
+## LOGGING
+
+The YAODAQLogger can be used to collect log messages from all running modules.
+
+Start the logger with:
+```bash
+./install/YAODAQLogger -i 192.168.1.100 -p 5000
+```
+
+Use the same IP address and port as the YAODAQServer.
 
 DAQ STATE MACHINE
 =================
@@ -290,7 +295,6 @@ The corresponding module will execute the procedure and return its response.
 ```bash
 quit
 ```
-
 
 QUICK START
 ===========
