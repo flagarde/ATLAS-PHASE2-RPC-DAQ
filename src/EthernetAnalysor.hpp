@@ -99,7 +99,7 @@ public:
     // Efficiency stufs
     for( std::size_t l = 0; l < 3; l++ )
     {
-      hEff1[l]->Clear();
+      hEff1[l]->Reset();
       evts_eta_p[l] = 0;
       evts_eta_m[l] = 0;
       evts_or[l]    = 0;
