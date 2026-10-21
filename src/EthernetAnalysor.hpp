@@ -40,6 +40,7 @@ public:
     prepareHistogramsCluster();
     initializeMap( good_hits );
   }
+  ~EthernetAnalysor() { closeFiles(); }
   void        setDTMax( const int dtmax ) noexcept { dt_max = dtmax; }
   void        setDTMin( const int dtmin ) noexcept { dt_min = dtmin; }
   void        setDAQWindows( const int windows ) noexcept { daq_windows = windows; }
@@ -59,13 +60,14 @@ public:
   }
   std::string getRPCType() noexcept { return rpc_type; }
 
-  void prepare_raw_file( const std::string name ) { m_rawdata_file.reset( new TFile( name.c_str(), "RECREATE" ) ); }
+  void prepare_raw_file( const std::string name ) { m_rawdata_file = new TFile( name.c_str(), "RECREATE" ); }
 
-  void prepare_events_file( const std::string name ) { m_event_file.reset( new TFile( name.c_str(), "RECREATE" ) ); }
+  void prepare_events_file( const std::string name ) { m_event_file = new TFile( name.c_str(), "RECREATE" ); }
 
   void prepare_raw_tree()
   {
     raw_tree = new TTree( "tree", "Events" );
+    raw_tree->SetDirectory( m_rawdata_file );
     raw_tree->Branch( "event", &event );
     raw_tree->Branch( "nHits", &nHits );
     raw_tree->Branch( "hit_dct", &hit_dct );
@@ -217,6 +219,7 @@ public:
   void prepare_events_tree()
   {
     events_tree = new TTree( "tree", "Events" );
+    events_tree->SetDirectory( m_event_file );
     events_tree->Branch( "event", &event );
     events_tree->Branch( "nHits", &nHits );
     events_tree->Branch( "hit_dct", &hit_dct );
@@ -275,6 +278,8 @@ public:
 
   void prepare_cluster_tree()
   {
+    clus_tree = new TTree( "clusters", "Events" );
+    clus_tree->SetDirectory( m_event_file );
     clus_tree->Branch( "event", &event );
     clus_tree->Branch( "nClus", &nClus );
     clus_tree->Branch( "nClus_l0_eta_p", &nClus_l0_eta_p );
@@ -734,6 +739,22 @@ public:
       return false;
   }
 
+  void closeFiles()
+  {
+    if( m_rawdata_file )
+    {
+      m_rawdata_file->Write();
+      m_rawdata_file->Close();
+    }
+    if( m_event_file )
+    {
+      m_event_file->Write();
+      m_event_file->Close();
+    }
+  }
+
+  void openFiles() {}
+
   void setEventNumber( const std::uint64_t event_nbr ) { event = event_nbr; }
 
   void calculateEfficiency()
@@ -1121,7 +1142,7 @@ private:
   std::string                             ref_side{ "eta_m" };
 
   // Raw things
-  TFilePtr         m_rawdata_file{ nullptr };
+  TFile*           m_rawdata_file{ nullptr };
   int              nHits = 0;
   std::vector<int> hit_dct;      // DCT 0-3
   std::vector<int> hit_channel;  // channel 1-144
@@ -1136,7 +1157,7 @@ private:
 
   // Events things
   std::vector<int> cabling_map;
-  TFilePtr         m_event_file{ nullptr };
+  TFile*           m_event_file{ nullptr };
   TTree*           events_tree = nullptr;
   std::vector<int> hit_bcid;
   std::vector<int> hit_rawbcout;

@@ -42,11 +42,20 @@ public:
   bool on_stop() override
   {
     analysor.clear_all();
+    analysor.closeFiles();
     return true;
   }
 
   bool on_start() override
   {
+    std::filesystem::create_directories( m_path / m_folder );
+    std::string root_file = m_path.string() + m_folder + "/" + add_root_extension( m_name + "_raw" );
+    analysor.prepare_raw_file( root_file );
+    analysor.prepare_raw_tree();
+    std::string root_file_event = m_path.string() + m_folder + "/" + add_root_extension( m_name + "_events" );
+    analysor.prepare_events_file( root_file_event );
+    analysor.prepare_events_tree();
+    analysor.prepare_cluster_tree();
     if( !analysor.raw_file_open() )
     {
       error( "raw_file is not created or opened !" );
@@ -78,14 +87,6 @@ public:
         return false;
       }
     }
-    std::filesystem::create_directories( m_path / m_folder );
-    std::string root_file = m_path.string() + m_folder + "/" + add_root_extension( m_name + "_raw" );
-    analysor.prepare_raw_file( root_file );
-    analysor.prepare_raw_tree();
-    std::string root_file_event = m_path.string() + m_folder + "/" + add_root_extension( m_name + "_events" );
-    analysor.prepare_events_file( root_file_event );
-    analysor.prepare_events_tree();
-    analysor.prepare_cluster_tree();
     return true;
   }
 
