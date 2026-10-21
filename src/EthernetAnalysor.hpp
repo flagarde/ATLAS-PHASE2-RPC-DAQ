@@ -4,11 +4,13 @@
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TTree.h"
+#include "cluster_utils.h"  // Cluster building utilities
 #include "fmt/format.h"
 #include "yaodaq/Logging.hpp"
 
 #include <algorithm>
 #include <exception>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -35,14 +37,18 @@ public:
     cabling_maps = { { "BIL680", { 0, -1, 1, 2, -1, 3 } }, { "BIL520", { 0, -1, 1, 2, -1, -1 } }, { "BIL680_alt", { -1, 0, 1, 2, -1, 3 } }, { "BIL520_alt", { -1, 0, 1, 2, -1, -1 } },  // configuration for using the second slot from the top of the Vdct
                      { "BIS1", { 0, 1, 2, 3, 4, 5 } },     { "BIS2_6", { 0, 1, 2, 3, 4, -1 } } };
     prepareHistograms();
+    prepareHistogramsCluster();
+    initializeMap( good_hits );
   }
-  void setDTMax( const int dtmax ) noexcept { dt_max = dtmax; }
-  void setDTMin( const int dtmin ) noexcept { dt_min = dtmin; }
-  void setDAQWindows( const int windows ) noexcept { daq_windows = windows; }
-  int  getDTMax() const noexcept { return dt_max; }
-  int  getDTMin() const noexcept { return dt_min; }
-  int  getDTWindows() const noexcept { return daq_windows; }
-  void setRPCType( const std::string type )
+  void        setDTMax( const int dtmax ) noexcept { dt_max = dtmax; }
+  void        setDTMin( const int dtmin ) noexcept { dt_min = dtmin; }
+  void        setDAQWindows( const int windows ) noexcept { daq_windows = windows; }
+  void        setReferenceSide( const std::string_view reference_side ) noexcept { ref_side = reference_side; }
+  int         getDTMax() const noexcept { return dt_max; }
+  int         getDTMin() const noexcept { return dt_min; }
+  int         getDTWindows() const noexcept { return daq_windows; }
+  std::string getReferenceSide() const noexcept { return ref_side; }
+  void        setRPCType( const std::string type )
   {
     if( cabling_maps.find( type ) == cabling_maps.end() ) throw std::runtime_error( fmt::format( "{} RPC type doesn't exist", type ) );
     else
@@ -75,6 +81,7 @@ public:
   {
     clear_raw_data();
     clear_events_data();
+    clear_cluster_data();
     tot_eta_p_ly0_2D->Reset();
     tot_eta_p_ly1_2D->Reset();
     tot_eta_p_ly2_2D->Reset();
@@ -110,6 +117,31 @@ public:
       evts_OR_rpc_trig[l]    = 0;
       evts_AND_rpc_trig[l]   = 0;
       evts_rpc_trig_denom[l] = 0;
+    }
+    // Efficiency cluster stufs
+    for( std::size_t l = 0; l < 3; l++ )
+    {
+      eff_eta_p[l]     = 0;
+      eff_eta_m[l]     = 0;
+      eff_eta_p_Acc[l] = 0;
+      eff_eta_m_Acc[l] = 0;
+
+      eff_OR[l]      = 0;
+      eff_AND[l]     = 0;
+      eff_OR_Acc[l]  = 0;
+      eff_AND_Acc[l] = 0;
+
+      eff_err_eta_p[l]     = 0;
+      eff_err_eta_m[l]     = 0;
+      eff_err_eta_p_Acc[l] = 0;
+      eff_err_eta_m_Acc[l] = 0;
+      eff_err_OR[l]        = 0;
+      eff_err_AND[l]       = 0;
+      eff_err_OR_Acc[l]    = 0;
+      eff_err_AND_Acc[l]   = 0;
+      hEff1Cluster[l]->Reset();
+
+      hEff1ClusterACC[l]->Reset();
     }
   }
 
@@ -239,6 +271,27 @@ public:
     events_tree->Branch( "clus_mult_l0", &clus_mult_l0 );
     events_tree->Branch( "clus_mult_l1", &clus_mult_l1 );
     events_tree->Branch( "clus_mult_l2", &clus_mult_l2 );
+  }
+
+  void prepare_cluster_tree()
+  {
+    clus_tree->Branch( "event", &event );
+    clus_tree->Branch( "nClus", &nClus );
+    clus_tree->Branch( "nClus_l0_eta_p", &nClus_l0_eta_p );
+    clus_tree->Branch( "nClus_l1_eta_p", &nClus_l1_eta_p );
+    clus_tree->Branch( "nClus_l2_eta_p", &nClus_l2_eta_p );
+    clus_tree->Branch( "nClus_l0_eta_m", &nClus_l0_eta_m );
+    clus_tree->Branch( "nClus_l1_eta_m", &nClus_l1_eta_m );
+    clus_tree->Branch( "nClus_l2_eta_m", &nClus_l2_eta_m );
+    clus_tree->Branch( "clus_etaSide", &clus_etaSide );
+    clus_tree->Branch( "clus_layer", &clus_layer );
+    clus_tree->Branch( "clus_centerStrip", &clus_centerStrip );
+    clus_tree->Branch( "clus_centroid", &clus_centroid );
+    clus_tree->Branch( "clus_time", &clus_time );
+    clus_tree->Branch( "clus_tot", &clus_tot );
+    clus_tree->Branch( "clus_totSum", &clus_totSum );
+    clus_tree->Branch( "clus_dt_trig", &clus_dt_trig );
+    clus_tree->Branch( "clus_size", &clus_size );
   }
 
   bool close_raw_file()
@@ -662,6 +715,11 @@ public:
     if( events_tree ) events_tree->Fill();
   }
 
+  void Fill_cluster_file()
+  {
+    if( clus_tree ) clus_tree->Fill();
+  }
+
   bool raw_file_open()
   {
     if( m_rawdata_file && m_rawdata_file->IsOpen() ) return true;
@@ -695,7 +753,6 @@ public:
         eff_err_eta_m[l] = sqrt( eff_eta_m[l] * ( 1.0 - eff_eta_m[l] ) / trig_evts );
         eff_err_or[l]    = sqrt( eff_or[l] * ( 1.0 - eff_or[l] ) / trig_evts );
         eff_err_and[l]   = sqrt( eff_and[l] * ( 1.0 - eff_and[l] ) / trig_evts );
-
         hEff1[l]->SetBinContent( 1, eff_eta_p[l] );
         hEff1[l]->SetBinError( 1, eff_err_eta_p[l] );
         hEff1[l]->SetBinContent( 2, eff_eta_m[l] );
@@ -720,6 +777,307 @@ public:
     info( "Triggered events: {}", trig_evts );
   }
 
+  void clusterAnalysis()
+  {
+    Layer      ly0, ly1, ly2;
+    const auto hitsInEvent = proc_strip.size();  // Number of hits in this event
+
+    // Loop over all hits in this event
+    for( size_t i = 0; i < hitsInEvent; ++i )
+    {
+      int  strip          = proc_strip.at( i );
+      int  connector      = strip / 8;
+      int  layerIndex     = proc_layer.at( i );
+      int  currentChannel = 24 * connector + 8 * layerIndex + strip;
+      int  time1          = proc_time1.at( i );
+      int  time2          = proc_time2.at( i );
+      bool hasEta1Time    = time1 >= 0;  // Check if eta_p has valid time
+      bool hasEta2Time    = time2 >= 0;  // Check if eta_m has valid time
+
+      if( !hasEta1Time && !hasEta2Time )
+      {
+        continue;  // Skip hits with no timing information
+      }
+
+      Layer* currentLayer = nullptr;
+      if( layerIndex == 0 ) currentLayer = &ly0;  // Layer 0
+      else if( layerIndex == 1 )
+        currentLayer = &ly1;  // Layer 1
+      else if( layerIndex == 2 )
+        currentLayer = &ly2;  // Layer 2
+      else
+        continue;  // Skip if layer index is invalid
+
+      if( hasEta1Time ) currentLayer->addHit( strip, /*isEta1=*/true, proc_time1.at( i ), proc_tot1.at( i ), proc_dt_trig1.at( i ) );
+      if( hasEta2Time ) currentLayer->addHit( strip, /*isEta1=*/false, proc_time2.at( i ), proc_tot2.at( i ), proc_dt_trig2.at( i ) );
+
+    }  // End loop over hits in this event
+
+    // Lambda function: build clusters from hits with valid timing
+    auto buildEtaClusters = [&]( const std::vector<Layer::Hit>& hits, int layerIndex, int etaSide )
+    {
+      std::vector<Layer::Hit> validHits;  // Filter for valid hits only
+      validHits.reserve( hits.size() );
+      for( const auto& hit: hits )
+      {
+        // Require valid leading time and trigger timing cuts
+        //if (hit.leadingTime >= 0.0F && hit.dt_trig < dt_trig_max && hit.dt_trig > dt_trig_min) {
+        validHits.push_back( hit );
+        //}
+      }
+      return buildClusters( validHits, layerIndex, etaSide );
+    };
+
+    // Build clusters for all layers and both eta sides
+    std::array<LayerClusters, 3> eventClusters;
+    eventClusters[0].eta_p = buildEtaClusters( ly0.eta_pHits, 0, 1 );  // Layer 0, eta_p
+    eventClusters[0].eta_m = buildEtaClusters( ly0.eta_mHits, 0, 2 );  // Layer 0, eta_m
+    eventClusters[1].eta_p = buildEtaClusters( ly1.eta_pHits, 1, 1 );  // Layer 1, eta_p
+    eventClusters[1].eta_m = buildEtaClusters( ly1.eta_mHits, 1, 2 );  // Layer 1, eta_m
+    eventClusters[2].eta_p = buildEtaClusters( ly2.eta_pHits, 2, 1 );  // Layer 2, eta_p
+    eventClusters[2].eta_m = buildEtaClusters( ly2.eta_mHits, 2, 2 );  // Layer 2, eta_m
+
+    //Fill cluster variables for the cluster tree
+    for( int l = 0; l < 3; l++ )
+    {
+      for( const std::string& eta: { "eta_p", "eta_m" } )
+      {
+        const auto& clusters = ( eta == "eta_p" ) ? eventClusters[l].eta_p : eventClusters[l].eta_m;
+        nClus += clusters.size();
+        if( eta == "eta_p" )
+        {
+          if( l == 0 ) nClus_l0_eta_p = clusters.size();
+          if( l == 1 ) nClus_l1_eta_p = clusters.size();
+          if( l == 2 ) nClus_l2_eta_p = clusters.size();
+        }
+        else
+        {
+          if( l == 0 ) nClus_l0_eta_m = clusters.size();
+          if( l == 1 ) nClus_l1_eta_m = clusters.size();
+          if( l == 2 ) nClus_l2_eta_m = clusters.size();
+        }
+        for( int ic = 0; ic < clusters.size(); ic++ )
+        {
+          clus_etaSide.push_back( clusters.at( ic ).etaSide );
+          clus_layer.push_back( clusters.at( ic ).layer );
+          clus_centerStrip.push_back( clusters.at( ic ).centerChannel );
+          clus_centroid.push_back( clusters.at( ic ).centroid );
+          clus_time.push_back( clusters.at( ic ).time );
+          clus_tot.push_back( clusters.at( ic ).tot );
+          clus_totSum.push_back( clusters.at( ic ).totSum );
+          clus_dt_trig.push_back( clusters.at( ic ).dt_trig );
+          clus_size.push_back( clusters.at( ic ).channels.size() );
+          if( eta == "eta_p" )
+          {
+            if( l == 0 ) cluster_size_eta_p_ly0->Fill( clusters.at( ic ).channels.size() );
+            if( l == 1 ) cluster_size_eta_p_ly1->Fill( clusters.at( ic ).channels.size() );
+            if( l == 2 ) cluster_size_eta_p_ly2->Fill( clusters.at( ic ).channels.size() );
+          }
+          else
+          {
+            if( l == 0 ) cluster_size_eta_m_ly0->Fill( clusters.at( ic ).channels.size() );
+            if( l == 1 ) cluster_size_eta_m_ly1->Fill( clusters.at( ic ).channels.size() );
+            if( l == 2 ) cluster_size_eta_m_ly2->Fill( clusters.at( ic ).channels.size() );
+          }
+        }
+      }
+    }
+
+    // construct vectors with cluster centers (for efficiency computation)
+    std::map<std::string, std::map<int, std::vector<int>>> cluster_centers_map;
+    std::map<std::string, std::map<int, std::vector<int>>> cluster_time_map;
+    initializeMap( cluster_centers_map );     // initialize with zeros
+    initializeMap( cluster_time_map, 9999 );  // initialize with 9999 (invalid time)
+    for( const std::string& eta: { "eta_p", "eta_m" } )
+    {
+      for( int l = 0; l < 3; ++l )
+      {
+        const auto& clusters = ( eta == "eta_p" ) ? eventClusters[l].eta_p : eventClusters[l].eta_m;
+        for( const auto& clus: clusters )
+        {
+          if( clus.dt_trig < dt_min || clus.dt_trig > dt_max ) continue;  //time cuts
+          int center = clus.centerChannel;
+          if( center >= 0 && center < 48 )
+          {
+            cluster_centers_map[eta][l][center] = 1;          //Fill map with centers of clusters
+            cluster_time_map[eta][l][center]    = clus.time;  //Fill map with times of clusters
+          }
+        }
+      }
+    }
+
+    // DEBUG print layers and clusters' centers
+    //displayClusters(event, nClus, cluster_centers_map);
+
+    // efficiency computation
+    for( int l = 0; l < 3; l++ )
+    {
+      std::map<std::string, bool> good_hit         = { { "eta_p", false }, { "eta_m", false } };
+      std::map<std::string, bool> good_trigger     = { { "eta_p", false }, { "eta_m", false } };
+      bool                        good_trigger_OR  = false;
+      bool                        good_trigger_AND = false;
+      for( const std::string& side: { "eta_p", "eta_m" } )
+      {
+        int l_ref1, l_ref2;
+        if( l == 0 ) l_ref1 = 1, l_ref2 = 2;
+        if( l == 1 ) l_ref1 = 0, l_ref2 = 2;
+        if( l == 2 ) l_ref1 = 0, l_ref2 = 1;
+
+        // Loop over towers
+        for( int tower_start = 0; tower_start < 48; tower_start++ )
+        {
+          int tower_end = std::min( tower_start + tower_width, 48 );
+
+          // Check for coincidence in reference layers within this tower
+          bool ref1_hasHit = false, ref2_hasHit = false;
+          for( int s = tower_start; s < tower_end; s++ )
+          {
+            if( cluster_centers_map[side][l_ref1][s] == 1 ) ref1_hasHit = true;
+            if( cluster_centers_map[side][l_ref2][s] == 1 ) ref2_hasHit = true;
+          }
+
+          // loop over all possible combinations of hits in the two reference layers within this tower
+          // and take the one with smallest time difference as reference time
+          int dt_ref       = 9999;
+          int ref_avg_time = 9999;
+          for( int s1 = tower_start; s1 < tower_end; s1++ )
+          {
+            if( cluster_time_map[side][l_ref1][s1] == 9999 ) continue;
+            for( int s2 = tower_start; s2 < tower_end; s2++ )
+            {
+              if( cluster_time_map[side][l_ref2][s2] == 9999 ) continue;
+              int dt_tmp = cluster_time_map[side][l_ref1][s1] - cluster_time_map[side][l_ref2][s2];
+              if( abs( dt_tmp ) < abs( dt_ref ) )
+              {
+                dt_ref       = dt_tmp;
+                ref_avg_time = ( cluster_time_map[side][l_ref1][s1] + cluster_time_map[side][l_ref2][s2] ) / 2;
+              }
+            }
+          }
+
+          if( abs( dt_ref ) > 200 )
+          {
+            ref1_hasHit = false;
+            ref2_hasHit = false;
+            continue;  //skip if time difference between reference layers is too large
+          }
+
+          // If both reference layers have hits in this tower, it's a good trigger
+          if( ref1_hasHit && ref2_hasHit )
+          {
+            good_trigger[side] = true;
+            for( int s = tower_start; s < tower_end; s++ )
+            {
+              int dt_hit = ref_avg_time - cluster_time_map[side][l][s];
+              if( cluster_centers_map[side][l][s] == 1 && abs( dt_hit ) < 200 ) good_hit[side] = true;
+            }
+          }
+        }
+      }
+      if( good_trigger["eta_p"] && good_trigger["eta_m"] ) good_trigger_OR = true;
+      if( good_trigger["eta_p"] && good_trigger["eta_m"] ) good_trigger_AND = true;
+      if( good_trigger_OR ) good_triggers_OR[l]++;
+      if( good_trigger_AND ) good_triggers_AND[l]++;
+
+      for( const std::string& side: { "eta_p", "eta_m" } )
+      {
+        if( good_trigger[side] && good_trigger_AND ) good_triggers[side][l]++;
+        if( good_hit[side] && good_trigger[side] && good_trigger_AND ) good_hits[side][l]++;
+      }
+
+      if( ( good_hit["eta_p"] || good_hit["eta_m"] ) && good_trigger_AND ) good_hits_OR[l]++;
+      if( ( good_hit["eta_p"] && good_hit["eta_m"] ) && good_trigger_AND ) good_hits_AND[l]++;
+    }
+  }
+
+  void ClusterFillTree() { clus_tree->Fill(); }
+  void clear_cluster_data()
+  {
+    nClus          = 0;
+    nClus_l0_eta_p = 0;
+    nClus_l1_eta_p = 0;
+    nClus_l2_eta_p = 0;
+    nClus_l0_eta_m = 0;
+    nClus_l1_eta_m = 0;
+    nClus_l2_eta_m = 0;
+    clus_etaSide.clear();
+    clus_layer.clear();
+    clus_centerStrip.clear();
+    clus_centroid.clear();
+    clus_time.clear();
+    clus_tot.clear();
+    clus_totSum.clear();
+    clus_dt_trig.clear();
+    clus_size.clear();
+  }
+
+  void calculateEfficiencyCluster()
+  {
+    for( int l = 0; l < 3; l++ )
+    {
+      if( good_triggers["eta_p"][l] > 0 && good_triggers["eta_m"][l] > 0 )
+      {  //compute efficiency only if there is at least one triggered event for both eta sides
+        eff_eta_p[l]     = static_cast<float>( good_hits["eta_p"][l] ) / good_triggers["eta_p"][l];
+        eff_eta_m[l]     = static_cast<double>( good_hits["eta_m"][l] ) / good_triggers["eta_m"][l];
+        eff_eta_p_Acc[l] = static_cast<float>( good_hits["eta_p"][l] ) / good_triggers["eta_p"][l] / geom_acc[l];
+        eff_eta_m_Acc[l] = static_cast<double>( good_hits["eta_m"][l] ) / good_triggers["eta_m"][l] / geom_acc[l];
+
+        eff_OR[l]      = static_cast<double>( good_hits_OR[l] ) / good_triggers_OR[l];
+        eff_AND[l]     = static_cast<double>( good_hits_AND[l] ) / good_triggers_AND[l];
+        eff_OR_Acc[l]  = static_cast<double>( good_hits_OR[l] ) / good_triggers_OR[l] / geom_acc[l];
+        eff_AND_Acc[l] = static_cast<double>( good_hits_AND[l] ) / good_triggers_AND[l] / geom_acc[l];
+
+        eff_err_eta_p[l]     = sqrt( eff_eta_p[l] * ( 1.0 - eff_eta_p[l] ) / good_triggers["eta_p"][l] );
+        eff_err_eta_m[l]     = sqrt( eff_eta_m[l] * ( 1.0 - eff_eta_m[l] ) / good_triggers["eta_m"][l] );
+        eff_err_eta_p_Acc[l] = sqrt( eff_eta_p_Acc[l] * ( 1.0 - eff_eta_p_Acc[l] ) / good_triggers["eta_p"][l] );
+        eff_err_eta_m_Acc[l] = sqrt( eff_eta_m_Acc[l] * ( 1.0 - eff_eta_m_Acc[l] ) / good_triggers["eta_m"][l] );
+        eff_err_OR[l]        = sqrt( eff_OR[l] * ( 1.0 - eff_OR[l] ) / good_triggers_OR[l] );
+        eff_err_AND[l]       = sqrt( eff_AND[l] * ( 1.0 - eff_AND[l] ) / good_triggers_AND[l] );
+        eff_err_OR_Acc[l]    = sqrt( eff_OR_Acc[l] * ( 1.0 - eff_OR_Acc[l] ) / good_triggers_OR[l] );
+        eff_err_AND_Acc[l]   = sqrt( eff_AND_Acc[l] * ( 1.0 - eff_AND_Acc[l] ) / good_triggers_AND[l] );
+        hEff1Cluster[l]->SetBinContent( 1, eff_eta_p[l] );
+        hEff1Cluster[l]->SetBinError( 1, eff_err_eta_p[l] );
+        hEff1Cluster[l]->SetBinContent( 2, eff_eta_m[l] );
+        hEff1Cluster[l]->SetBinError( 2, eff_err_eta_m[l] );
+        hEff1Cluster[l]->SetBinContent( 3, eff_OR[l] );
+        hEff1Cluster[l]->SetBinError( 3, eff_err_OR[l] );
+        hEff1Cluster[l]->SetBinContent( 4, eff_AND[l] );
+        hEff1Cluster[l]->SetBinError( 4, eff_err_AND[l] );
+
+        hEff1ClusterACC[l]->SetBinContent( 1, eff_eta_p_Acc[l] );
+        hEff1ClusterACC[l]->SetBinError( 1, eff_err_eta_p_Acc[l] );
+        hEff1ClusterACC[l]->SetBinContent( 2, eff_eta_m_Acc[l] );
+        hEff1ClusterACC[l]->SetBinError( 2, eff_err_eta_m_Acc[l] );
+        hEff1ClusterACC[l]->SetBinContent( 3, eff_OR_Acc[l] );
+        hEff1ClusterACC[l]->SetBinError( 3, eff_err_OR_Acc[l] );
+        hEff1ClusterACC[l]->SetBinContent( 4, eff_AND_Acc[l] );
+        hEff1ClusterACC[l]->SetBinError( 4, eff_err_AND_Acc[l] );
+      }
+    }
+
+    auto print_eff = [this]( std::string_view name, const auto& eff, const auto& err ) { info( "* {}:\t ly0 = {:.3f} +/- {:.3f}\t ly1 = {:.3f} +/- {:.3f}\t ly2 = {:.3f} +/- {:.3f}", name, eff[0], err[0], eff[1], err[1], eff[2], err[2] ); };
+    info( "Applied cuts on timing window from trigger (ticks): [{}, {}]", dt_min, dt_max );
+    info( "******** Efficiency done with clusters requiring topological coincidence (tower width = {}, no geometrical acceptance) *******", tower_width );
+    print_eff( "eta_p", eff_eta_p, eff_err_eta_p );
+    print_eff( "eta_m", eff_eta_m, eff_err_eta_m );
+    print_eff( "OR", eff_OR, eff_err_OR );
+    print_eff( "AND", eff_AND, eff_err_AND );
+    info( "********* Efficiencies with geometrical acceptance for each layer (from simulation):\t ly0 = {}\t ly1 = {}\t ly2 = {} ********", geom_acc[0], geom_acc[1], geom_acc[2] );
+    print_eff( "eta_p", eff_eta_p_Acc, eff_err_eta_p_Acc );
+    print_eff( "eta_m", eff_eta_m_Acc, eff_err_eta_m_Acc );
+    print_eff( "OR", eff_OR_Acc, eff_err_OR_Acc );
+    print_eff( "AND", eff_AND_Acc, eff_err_AND_Acc );
+    info( "**********************************************************************" );
+    info( "Triggered events eta_p:\t ly0 = {}\t ly1 = {}\t ly2 = {}", good_triggers["eta_p"][0], good_triggers["eta_p"][1], good_triggers["eta_p"][2] );
+    info( "Good events eta_p:\t ly0 = {}\t ly1 = {}\t ly2 = {}", good_hits["eta_p"][0], good_hits["eta_p"][1], good_hits["eta_p"][2] );
+    info( "Triggered events eta_m:\t ly0 = {}\t ly1 = {}\t ly2 = {}", good_triggers["eta_m"][0], good_triggers["eta_m"][1], good_triggers["eta_m"][2] );
+    info( "Good events eta_m:\t ly0 = {}\t ly1 = {}\t ly2 = {}", good_hits["eta_m"][0], good_hits["eta_m"][1], good_hits["eta_m"][2] );
+    info( "Triggered events OR:\t ly0 = {}\t ly1 = {}\t ly2 = {}", good_triggers_OR[0], good_triggers_OR[1], good_triggers_OR[2] );
+    info( "Good events OR:\t ly0 = {}\t ly1 = {}\t ly2 = {}", good_hits_OR[0], good_hits_OR[1], good_hits_OR[2] );
+    info( "Triggered events AND:\t ly0 = {}\t ly1 = {}\t ly2 = {}", good_triggers_AND[0], good_triggers_AND[1], good_triggers_AND[2] );
+    info( "Good events AND:\t ly0 = {}\t ly1 = {}\t ly2 = {}", good_hits_AND[0], good_hits_AND[1], good_hits_AND[2] );
+  }
+
 private:
   void prepareHistograms()
   {
@@ -738,12 +1096,29 @@ private:
       hEff1[l]->GetXaxis()->SetBinLabel( 4, "AND" );
     }
   }
+  void prepareHistogramsCluster()
+  {
+    for( std::size_t l = 0; l < 3; l++ )
+    {
+      hEff1Cluster[l] = new TH1F( Form( "efficiency_rpc_trig_layer%d", l ), Form( "Efficiency layer %d (trigger with other singlets) done with clusters;type;efficiency", l ), 4, 0.5, 4.5 );
+      hEff1Cluster[l]->GetXaxis()->SetBinLabel( 1, "eta_p" );
+      hEff1Cluster[l]->GetXaxis()->SetBinLabel( 2, "eta_m" );
+      hEff1Cluster[l]->GetXaxis()->SetBinLabel( 3, "OR" );
+      hEff1Cluster[l]->GetXaxis()->SetBinLabel( 4, "AND" );
 
+      hEff1ClusterACC[l] = new TH1F( Form( "efficiency_rpc_trig_layer%d_acc", l ), Form( "Efficiency layer %d (trigger with other singlets) done with clusters and geometrical acceptance;type;efficiency", l ), 4, 0.5, 4.5 );
+      hEff1ClusterACC[l]->GetXaxis()->SetBinLabel( 1, "eta_p" );
+      hEff1ClusterACC[l]->GetXaxis()->SetBinLabel( 2, "eta_m" );
+      hEff1ClusterACC[l]->GetXaxis()->SetBinLabel( 3, "OR" );
+      hEff1ClusterACC[l]->GetXaxis()->SetBinLabel( 4, "AND" );
+    }
+  }
   std::map<std::string, std::vector<int>> cabling_maps;
   std::string                             rpc_type;
   int                                     dt_max{ 300 };
   int                                     dt_min{ -300 };
   int                                     daq_windows{ 128 };
+  std::string                             ref_side{ "eta_m" };
 
   // Raw things
   TFilePtr         m_rawdata_file{ nullptr };
@@ -853,4 +1228,61 @@ private:
   int evts_OR_rpc_trig[3]    = { 0, 0, 0 };
   int evts_AND_rpc_trig[3]   = { 0, 0, 0 };
   int evts_rpc_trig_denom[3] = { 0, 0, 0 };
+
+  // Cluster things
+  TTree*                                    clus_tree{ nullptr };
+  int                                       nClus          = 0;
+  int                                       nClus_l0_eta_p = 0, nClus_l1_eta_p = 0, nClus_l2_eta_p = 0;
+  int                                       nClus_l0_eta_m = 0, nClus_l1_eta_m = 0, nClus_l2_eta_m = 0;
+  std::vector<int>                          clus_etaSide;
+  std::vector<int>                          clus_layer;
+  std::vector<int>                          clus_centerStrip;
+  std::vector<float>                        clus_centroid;
+  std::vector<int>                          clus_time;
+  std::vector<int>                          clus_tot;
+  std::vector<int>                          clus_totSum;
+  std::vector<int>                          clus_dt_trig;
+  std::vector<int>                          clus_size;
+  TH1D*                                     cluster_size_eta_p_ly0 = new TH1D( "cluster_size_eta_p_ly0", "cluster_size_eta_p_ly0", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_p_ly1 = new TH1D( "cluster_size_eta_p_ly1", "cluster_size_eta_p_ly1", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_p_ly2 = new TH1D( "cluster_size_eta_p_ly2", "cluster_size_eta_p_ly2", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_m_ly0 = new TH1D( "cluster_size_eta_m_ly0", "cluster_size_eta_m_ly0", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_m_ly1 = new TH1D( "cluster_size_eta_m_ly1", "cluster_size_eta_m_ly1", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_m_ly2 = new TH1D( "cluster_size_eta_m_ly2", "cluster_size_eta_m_ly2", 10, 0, 10 );
+  std::map<std::string, std::map<int, int>> good_hits;                                                                                                             //good hit event counters for efficiency computation
+  std::map<std::string, std::map<int, int>> good_triggers     = { { "eta_p", { { 0, 0 }, { 1, 0 }, { 2, 0 } } }, { "eta_m", { { 0, 0 }, { 1, 0 }, { 2, 0 } } } };  //good triggered event counters for efficiency computation
+  std::map<int, int>                        good_triggers_OR  = { { 0, 0 }, { 1, 0 }, { 2, 0 } };
+  std::map<int, int>                        good_triggers_AND = { { 0, 0 }, { 1, 0 }, { 2, 0 } };
+  std::map<int, int>                        good_hits_OR      = { { 0, 0 }, { 1, 0 }, { 2, 0 } };
+  std::map<int, int>                        good_hits_AND     = { { 0, 0 }, { 1, 0 }, { 2, 0 } };
+
+  // Efficiency cluster
+  // Efficiency computation --- triggering on RPC singlets -----
+  std::array<double, 3> eff_eta_p{ 0., 0., 0. };
+  std::array<double, 3> eff_eta_m{ 0., 0., 0. };
+  std::array<double, 3> eff_OR{ 0., 0., 0. };
+  std::array<double, 3> eff_AND{ 0., 0., 0. };
+  std::array<double, 3> eff_eta_p_Acc{ 0., 0., 0. };
+  std::array<double, 3> eff_eta_m_Acc{ 0., 0., 0. };
+  std::array<double, 3> eff_OR_Acc{ 0., 0., 0. };
+  std::array<double, 3> eff_AND_Acc{ 0., 0., 0. };
+  std::array<double, 3> eff_err_eta_p{ 0., 0., 0. };
+  std::array<double, 3> eff_err_eta_m{ 0., 0., 0. };
+  std::array<double, 3> eff_err_OR{ 0., 0., 0. };
+  std::array<double, 3> eff_err_AND{ 0., 0., 0. };
+  std::array<double, 3> eff_err_eta_p_Acc{ 0., 0., 0. };
+  std::array<double, 3> eff_err_eta_m_Acc{ 0., 0., 0. };
+  std::array<double, 3> eff_err_OR_Acc{ 0., 0., 0. };
+  std::array<double, 3> eff_err_AND_Acc{ 0., 0., 0. };
+  std::map<int, float>  geom_acc;
+  //if (singlets) {
+  //    geom_acc = {{0, 0.836}, {1, 0.992}, {2, 0.856}}; //geometrical acceptance for each layer (from simulation)
+  //} else {
+  //    geom_acc = {{0, 0.959}, {1, 1}, {2, 0.951}}; // no geometrical correction if using triplets
+  //}
+
+  std::array<TH1F*, 3> hEff1Cluster;
+  std::array<TH1F*, 3> hEff1ClusterACC;
+
+  int tower_width = 48;  // default values //TODO understand that stufs
 };

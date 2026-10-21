@@ -41,6 +41,7 @@ public:
   void setDTMax( const int dtmax ) noexcept { m_analyse.setDTMax( dtmax ); }
   void setDTMin( const int dtmin ) noexcept { m_analyse.setDTMin( dtmin ); }
   void setRPCType( const std::string type ) { m_analyse.setRPCType( type ); }
+  void setReferenceSide( const std::string_view reference ) { m_analyse.setReferenceSide( reference ); }
 
   ~Analyser() override { m_thread.request_stop(); }
 
@@ -57,6 +58,7 @@ public:
     {
       m_analyse.clear_raw_data();
       m_analyse.clear_events_data();
+      m_analyse.clear_cluster_data();
       thread_local simdjson::ondemand::parser parser;
       const char*                             data = reinterpret_cast<const char*>( raw->payload().data() );
       std::size_t                             len  = raw->payload().size();
@@ -99,6 +101,8 @@ public:
       m_analyse.setNbHits();
       m_analyse.events_analyse();
       m_analyse.calculateEfficiency();
+      m_analyse.clusterAnalysis();
+      m_analyse.calculateEfficiencyCluster();
     }
   }
 
@@ -155,6 +159,8 @@ try
   app.add_option( "--dt_min", dt_min, "DT min" );
   int dt_max{ -100 };
   app.add_option( "--dt_max", dt_max, "DT max" );
+  std::string reference_side{ "eta_m" };
+  app.add_option( "--reference_side", reference_side, "reference side" );
   try
   {
     app.parse( argc, argv );
@@ -169,6 +175,7 @@ try
   module.setDTMax( dt_max );
   module.setDTMin( dt_min );
   module.setRPCType( rpc_type );
+  module.setReferenceSide( reference_side );
   std::size_t nbrCTLC{ 3 };
   Term::cout << Term::color_fg( Term::Color::Name::Red ) << "Press " << std::to_string( nbrCTLC ) << " times CTRL+C to stop" << Term::color_fg( Term::Color::Name::Default ) << std::endl;
   module.link();

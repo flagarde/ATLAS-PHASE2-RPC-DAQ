@@ -52,7 +52,7 @@ set_target_properties(DCTEthernet PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREF
 target_include_directories(DCTEthernet PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
 ## run sudo setcap cap_net_raw,cap_net_admin=eip ./install/bin/DCT
 
-add_library(EthernetAnalysor STATIC EthernetAnalysor.cpp)
+add_library(EthernetAnalysor STATIC EthernetAnalysor.cpp cluster_utils.cxx)
 target_link_libraries(EthernetAnalysor PRIVATE yaodaq::yaodaq spdlog::spdlog fmt::fmt ROOT::RHTTP ROOT::Net ROOT::Core ROOT::RIO ROOT::Tree ROOT::ROOTNTuple ROOT::Gpad ROOT::Hist )
 target_include_directories(EthernetAnalysor PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
 

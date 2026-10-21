@@ -85,6 +85,7 @@ public:
     std::string root_file_event = m_path.string() + m_folder + "/" + add_root_extension( m_name + "_events" );
     analysor.prepare_events_file( root_file_event );
     analysor.prepare_events_tree();
+    analysor.prepare_cluster_tree();
     return true;
   }
 
@@ -107,6 +108,7 @@ public:
     {
       analysor.clear_raw_data();
       analysor.clear_events_data();
+      analysor.clear_cluster_data();
       thread_local simdjson::ondemand::parser parser;
       const char*                             data = reinterpret_cast<const char*>( raw->payload().data() );
       std::size_t                             len  = raw->payload().size();
@@ -146,14 +148,18 @@ public:
       }
       analysor.setNbHits();
       analysor.events_analyse();
+      analysor.clusterAnalysis();
       analysor.Fill_raw_file();
       analysor.Fill_events_file();
+      analysor.Fill_cluster_file();
       analysor.calculateEfficiency();
+      analysor.calculateEfficiencyCluster();
     }
   }
   void setDTMax( const int dtmax ) noexcept { analysor.setDTMax( dtmax ); }
   void setDTMin( const int dtmin ) noexcept { analysor.setDTMin( dtmin ); }
   void setRPCType( const std::string type ) { analysor.setRPCType( type ); }
+  void setReferenceSide( const std::string_view reference ) { analysor.setReferenceSide( reference ); }
 
 private:
   std::string rpc_type;
@@ -207,6 +213,8 @@ try
   app.add_option( "--dt_min", dt_min, "DT min" );
   int dt_max{ -100 };
   app.add_option( "--dt_max", dt_max, "DT max" );
+  std::string reference_side{ "eta_m" };
+  app.add_option( "--reference_side", reference_side, "reference side" );
   try
   {
     app.parse( argc, argv );
@@ -223,6 +231,7 @@ try
   module.setDTMax( dt_max );
   module.setDTMin( dt_min );
   module.setRPCType( rpc_type );
+  module.setReferenceSide( reference_side );
   module.link();
 
   std::size_t nbrCTLC{ 3 };

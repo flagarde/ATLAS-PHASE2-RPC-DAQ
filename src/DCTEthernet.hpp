@@ -17,7 +17,11 @@
 class DCTEthernet : public yaodaq::Board
 {
 public:
-  DCTEthernet( yaodaq::BoardConfig& cfg, const std::string_view name ) : yaodaq::Board( cfg, name, "DCT" ) { this->setRun( fun ); }
+  DCTEthernet( yaodaq::BoardConfig& cfg, const std::string_view name ) : yaodaq::Board( cfg, name, "DCT" ), /* */ m_ethernet( this->identifier() ) /* TODO Change that*/
+  {
+    m_ethernet.setLogger( this->get_logger() );
+    this->setRun( fun );
+  }
   ~DCTEthernet() final
   {
     connect_finished.store( false );
@@ -54,26 +58,28 @@ public:
     info( "Interface MTU: {}", m_ethernet.mtu() );
     info( "DNS server: {}", m_ethernet.defaultGateway() );
     Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
-    //if( !spy )
-    // {
-    if( !configure_dct() ) return false;
-    if( !configure_board() ) return false;
-    //}
+    if( !spy )
+    {
+      if( !configure_dct() ) return false;
+      if( !configure_board() ) return false;
+    }
     Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
     return true;
   }
   bool post_connect() override
   {
     warn( "Waiting connecting step to finish !" );
-    sendCommand( "open_hw_manager" );
-    sendCommand( "connect_hw_server" );
-    sendCommand( "puts __YAODAQ_CONNECT_FINISHED__" );
-    while( !connect_finished.load() )
+    if( !spy )
     {
-      std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
-      info( "Connecting..." );
+      sendCommand( "open_hw_manager" );
+      sendCommand( "connect_hw_server" );
+      sendCommand( "puts __YAODAQ_CONNECT_FINISHED__" );
+      while( !connect_finished.load() )
+      {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
+        info( "Connecting..." );
+      }
     }
-
     connect_finished.store( false );
     warn( "Connecting step finished !" );
     return true;
@@ -418,14 +424,14 @@ public:
       error( "m_ethernet.start() failed" );
       return false;
     }
-    if( self_trigger ) startTriggers();
+    if( !spy && self_trigger ) startTriggers();
     return true;
   }
 
   bool on_pause() override
   {
     info( "Pausing Ethernet processing" );
-    if( self_trigger ) stopTriggers();
+    if( !spy && self_trigger ) stopTriggers();
     m_ethernet.pause();
     return true;
   }
@@ -438,14 +444,14 @@ public:
       error( "m_ethernet.start() failed" );
       return false;
     }
-    if( self_trigger ) startTriggers();
+    if( !spy && self_trigger ) startTriggers();
     return true;
   }
 
   bool on_stop() override
   {
     info( "Stopping Ethernet capture" );
-    if( self_trigger ) stopTriggers();
+    if( !spy && self_trigger ) stopTriggers();
     m_ethernet.stop();
     info( "Ethernet capture stopped" );
     return true;
@@ -469,31 +475,6 @@ public:
       return;
     }
     if( eth1->getLayerPayloadSize() < 2 || eth2->getLayerPayloadSize() < 2 ) return;
-    /*
-    auto printHex = [](const uint8_t* data, std::size_t size)
-{
-    std::string out;
-    out.reserve(size * 3);
-
-    for (std::size_t i = 0; i < size; ++i)
-    {
-        fmt::format_to(std::back_inserter(out), "{:02X} ", data[i]);
-    }
-
-    return out;
-};
-info(
-    "****************\n{}\n{}\n************",
-    printHex(
-        reinterpret_cast<const uint8_t*>(eth1->getLayerPayload()) + 1,
-        eth1->getLayerPayloadSize() - 1
-    ),
-    printHex(
-        reinterpret_cast<const uint8_t*>(eth2->getLayerPayload()) + 1,
-        eth2->getLayerPayloadSize() - 1
-    )
-);*/
-
     thread_local std::string json;
     json.clear();
     json.reserve( 8192 );
@@ -512,7 +493,6 @@ info(
 
     std::size_t size = eth1->getLayerPayloadSize();
 
-    // Skip the first byte: 0a
     for( std::size_t pos = 1; pos + sizeof( std::uint32_t ) <= size; pos += sizeof( std::uint32_t ) )
     {
       const std::uint32_t word = ( std::uint32_t( payload[pos + 0] ) << 24 ) | ( std::uint32_t( payload[pos + 1] ) << 16 ) | ( std::uint32_t( payload[pos + 2] ) << 8 ) | std::uint32_t( payload[pos + 3] );
@@ -538,7 +518,6 @@ info(
     payload = static_cast<const std::uint8_t*>( eth2->getLayerPayload() );
     size    = eth2->getLayerPayloadSize();
 
-    // Skip the first byte: 0a
     for( std::size_t pos = 1; pos + sizeof( std::uint32_t ) <= size; pos += sizeof( std::uint32_t ) )
     {
       const std::uint32_t word = ( std::uint32_t( payload[pos + 0] ) << 24 ) | ( std::uint32_t( payload[pos + 1] ) << 16 ) | ( std::uint32_t( payload[pos + 2] ) << 8 ) | std::uint32_t( payload[pos + 3] );
@@ -579,16 +558,18 @@ info(
     info( "pre_disconnect()" );
     m_ethernet.stop();
     m_ethernet.close();
-
-    sendCommand( "close_hw_target" );
-    sendCommand( "disconnect_hw_server" );
-    sendCommand( "close_hw_manager" );
-    sendCommand( "puts __YAODAQ_DISCONNECT_FINISHED__" );
-    sendCommand( "exit" );
-    while( !disconnect_finished.load() )
+    if( !spy )
     {
-      std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
-      warn( "Waiting disconnect step to finish !" );
+      sendCommand( "close_hw_target" );
+      sendCommand( "disconnect_hw_server" );
+      sendCommand( "close_hw_manager" );
+      sendCommand( "puts __YAODAQ_DISCONNECT_FINISHED__" );
+      sendCommand( "exit" );
+      while( !disconnect_finished.load() )
+      {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
+        warn( "Waiting disconnect step to finish !" );
+      }
     }
 
     disconnect_finished.store( false );
@@ -736,10 +717,10 @@ private:
     send_to_device( std::move( raw ) );
   }
 
-  class EthernetCapture
+  class EthernetCapture : public yaodaq::Loggable
   {
   public:
-    EthernetCapture() = default;
+    EthernetCapture( const yaodaq::Identifier& id ) : yaodaq::Loggable( id ) {};
     ~EthernetCapture()
     {
       if( dev )
@@ -748,7 +729,6 @@ private:
         close();
       }
     }
-    EthernetCapture( const std::string_view board, const std::string_view mac_adress ) : m_board( board ), m_mac( mac_adress ) {}
     void setBoard( const std::string_view board ) { m_board = board; }
     void setMac( const std::string_view mac ) { m_mac = mac; }
     bool open()
@@ -756,21 +736,21 @@ private:
       dev = pcpp::PcapLiveDeviceList::getInstance().getDeviceByName( m_board );
       if( !dev )
       {
-        //error("pcpp::PcapLiveDeviceList::getInstance().getDeviceByName({}) failed", m_ethernet_name);
-        //Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
+        error( "pcpp::PcapLiveDeviceList::getInstance().getDeviceByName({}) failed", m_board );
+        Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
         return false;
       }
       if( !dev->open() )
       {
-        //error("Can't open {}",m_ethernet_name);
-        //Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
+        error( "Can't open {}", m_board );
+        Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
         return false;
       }
       if( !dev->setFilter( fmt::format( "ether src {}", m_mac ) ) )
       {
-        //error("Could not set BPF filter with mac: {}",m_mac_adress);
+        error( "Could not set BPF filter with mac: {}", m_mac );
         dev->close();
-        //Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
+        Term::terminal.setOptions( Term::Option::Raw, Term::Option::Cursor );
         return false;
       }
       return true;
