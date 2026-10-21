@@ -64,6 +64,13 @@ public:
 
   void prepare_events_file( const std::string name ) { m_event_file = new TFile( name.c_str(), "RECREATE" ); }
 
+  void setAcceptance()
+  {
+    if( singlets ) geom_acc = { { 0, 0.836 }, { 1, 0.992 }, { 2, 0.856 } };  //geometrical acceptance for each layer (from simulation)
+    else
+      geom_acc = { { 0, 0.959 }, { 1, 1 }, { 2, 0.951 } };  // no geometrical correction if using triplets
+  }
+
   void prepare_raw_tree()
   {
     raw_tree = new TTree( "tree", "Events" );
@@ -84,26 +91,26 @@ public:
     clear_raw_data();
     clear_events_data();
     clear_cluster_data();
-    tot_eta_p_ly0_2D->Reset();
-    tot_eta_p_ly1_2D->Reset();
-    tot_eta_p_ly2_2D->Reset();
-    tot_eta_m_ly0_2D->Reset();
-    tot_eta_m_ly1_2D->Reset();
-    tot_eta_m_ly2_2D->Reset();
-    tot_eta_p_ly0_1D->Reset();
-    tot_eta_p_ly1_1D->Reset();
-    tot_eta_p_ly2_1D->Reset();
-    tot_eta_m_ly0_1D->Reset();
-    tot_eta_m_ly1_1D->Reset();
-    tot_eta_m_ly2_1D->Reset();
-    dt_trig_vs_strip_eta_p->Reset();
-    dt_trig_vs_strip_eta_m->Reset();
-    strips_eta_p_layer0->Reset();
-    strips_eta_p_layer1->Reset();
-    strips_eta_p_layer2->Reset();
-    strips_eta_m_layer0->Reset();
-    strips_eta_m_layer1->Reset();
-    strips_eta_m_layer2->Reset();
+    tot_eta_p_ly0_2D.Reset();
+    tot_eta_p_ly1_2D.Reset();
+    tot_eta_p_ly2_2D.Reset();
+    tot_eta_m_ly0_2D.Reset();
+    tot_eta_m_ly1_2D.Reset();
+    tot_eta_m_ly2_2D.Reset();
+    tot_eta_p_ly0_1D.Reset();
+    tot_eta_p_ly1_1D.Reset();
+    tot_eta_p_ly2_1D.Reset();
+    tot_eta_m_ly0_1D.Reset();
+    tot_eta_m_ly1_1D.Reset();
+    tot_eta_m_ly2_1D.Reset();
+    dt_trig_vs_strip_eta_p.Reset();
+    dt_trig_vs_strip_eta_m.Reset();
+    strips_eta_p_layer0.Reset();
+    strips_eta_p_layer1.Reset();
+    strips_eta_p_layer2.Reset();
+    strips_eta_m_layer0.Reset();
+    strips_eta_m_layer1.Reset();
+    strips_eta_m_layer2.Reset();
     trig_evts = 0;
     // Efficiency stufs
     for( std::size_t l = 0; l < 3; l++ )
@@ -141,9 +148,9 @@ public:
       eff_err_AND[l]       = 0;
       eff_err_OR_Acc[l]    = 0;
       eff_err_AND_Acc[l]   = 0;
-      hEff1Cluster[l]->Reset();
+      hEff1Cluster[l].Reset();
 
-      hEff1ClusterACC[l]->Reset();
+      hEff1ClusterACC[l].Reset();
     }
   }
 
@@ -626,45 +633,45 @@ public:
 
     for( std::size_t ip = 0; ip < nProc; ip++ )
     {
-      if( proc_time1[ip] > -1 ) dt_trig_vs_strip_eta_p->Fill( proc_layer[ip] * 48 + proc_strip[ip], ( proc_time1[ip] - trig_time ) );
-      if( proc_time2[ip] > -1 ) dt_trig_vs_strip_eta_m->Fill( proc_layer[ip] * 48 + proc_strip[ip], ( proc_time2[ip] - trig_time ) );
+      if( proc_time1[ip] > -1 ) dt_trig_vs_strip_eta_p.Fill( proc_layer[ip] * 48 + proc_strip[ip], ( proc_time1[ip] - trig_time ) );
+      if( proc_time2[ip] > -1 ) dt_trig_vs_strip_eta_m.Fill( proc_layer[ip] * 48 + proc_strip[ip], ( proc_time2[ip] - trig_time ) );
 
-      if( proc_layer[ip] == 0 && proc_time1[ip] > -1 ) strips_eta_p_layer0->Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 1 && proc_time1[ip] > -1 ) strips_eta_p_layer1->Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 2 && proc_time1[ip] > -1 ) strips_eta_p_layer2->Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 0 && proc_time2[ip] > -1 ) strips_eta_m_layer0->Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 1 && proc_time2[ip] > -1 ) strips_eta_m_layer1->Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 2 && proc_time2[ip] > -1 ) strips_eta_m_layer2->Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 0 && proc_time1[ip] > -1 ) strips_eta_p_layer0.Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 1 && proc_time1[ip] > -1 ) strips_eta_p_layer1.Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 2 && proc_time1[ip] > -1 ) strips_eta_p_layer2.Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 0 && proc_time2[ip] > -1 ) strips_eta_m_layer0.Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 1 && proc_time2[ip] > -1 ) strips_eta_m_layer1.Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 2 && proc_time2[ip] > -1 ) strips_eta_m_layer2.Fill( proc_strip[ip] );
 
       if( proc_layer[ip] == 0 && proc_time1[ip] > -1 && proc_tot1[ip] != 9999 )
       {
-        tot_eta_p_ly0_1D->Fill( proc_tot1[ip] );
-        tot_eta_p_ly0_2D->Fill( proc_strip[ip], proc_tot1[ip] );
+        tot_eta_p_ly0_1D.Fill( proc_tot1[ip] );
+        tot_eta_p_ly0_2D.Fill( proc_strip[ip], proc_tot1[ip] );
       }
       if( proc_layer[ip] == 1 && proc_time1[ip] > -1 && proc_tot1[ip] != 9999 )
       {
-        tot_eta_p_ly1_1D->Fill( proc_tot1[ip] );
-        tot_eta_p_ly1_2D->Fill( proc_strip[ip], proc_tot1[ip] );
+        tot_eta_p_ly1_1D.Fill( proc_tot1[ip] );
+        tot_eta_p_ly1_2D.Fill( proc_strip[ip], proc_tot1[ip] );
       }
       if( proc_layer[ip] == 2 && proc_time1[ip] > -1 && proc_tot1[ip] != 9999 )
       {
-        tot_eta_p_ly2_1D->Fill( proc_tot1[ip] );
-        tot_eta_p_ly2_2D->Fill( proc_strip[ip], proc_tot1[ip] );
+        tot_eta_p_ly2_1D.Fill( proc_tot1[ip] );
+        tot_eta_p_ly2_2D.Fill( proc_strip[ip], proc_tot1[ip] );
       }
       if( proc_layer[ip] == 0 && proc_time2[ip] > -1 && proc_tot2[ip] != 9999 )
       {
-        tot_eta_m_ly0_1D->Fill( proc_tot2[ip] );
-        tot_eta_m_ly0_2D->Fill( proc_strip[ip], proc_tot2[ip] );
+        tot_eta_m_ly0_1D.Fill( proc_tot2[ip] );
+        tot_eta_m_ly0_2D.Fill( proc_strip[ip], proc_tot2[ip] );
       }
       if( proc_layer[ip] == 1 && proc_time2[ip] > -1 && proc_tot2[ip] != 9999 )
       {
-        tot_eta_m_ly1_1D->Fill( proc_tot2[ip] );
-        tot_eta_m_ly1_2D->Fill( proc_strip[ip], proc_tot2[ip] );
+        tot_eta_m_ly1_1D.Fill( proc_tot2[ip] );
+        tot_eta_m_ly1_2D.Fill( proc_strip[ip], proc_tot2[ip] );
       }
       if( proc_layer[ip] == 2 && proc_time2[ip] > -1 && proc_tot2[ip] != 9999 )
       {
-        tot_eta_m_ly2_1D->Fill( proc_tot2[ip] );
-        tot_eta_m_ly2_2D->Fill( proc_strip[ip], proc_tot2[ip] );
+        tot_eta_m_ly2_1D.Fill( proc_tot2[ip] );
+        tot_eta_m_ly2_2D.Fill( proc_strip[ip], proc_tot2[ip] );
       }
     }
 
@@ -890,15 +897,15 @@ public:
           clus_size.push_back( clusters.at( ic ).channels.size() );
           if( eta == "eta_p" )
           {
-            if( l == 0 ) cluster_size_eta_p_ly0->Fill( clusters.at( ic ).channels.size() );
-            if( l == 1 ) cluster_size_eta_p_ly1->Fill( clusters.at( ic ).channels.size() );
-            if( l == 2 ) cluster_size_eta_p_ly2->Fill( clusters.at( ic ).channels.size() );
+            if( l == 0 ) cluster_size_eta_p_ly0.Fill( clusters.at( ic ).channels.size() );
+            if( l == 1 ) cluster_size_eta_p_ly1.Fill( clusters.at( ic ).channels.size() );
+            if( l == 2 ) cluster_size_eta_p_ly2.Fill( clusters.at( ic ).channels.size() );
           }
           else
           {
-            if( l == 0 ) cluster_size_eta_m_ly0->Fill( clusters.at( ic ).channels.size() );
-            if( l == 1 ) cluster_size_eta_m_ly1->Fill( clusters.at( ic ).channels.size() );
-            if( l == 2 ) cluster_size_eta_m_ly2->Fill( clusters.at( ic ).channels.size() );
+            if( l == 0 ) cluster_size_eta_m_ly0.Fill( clusters.at( ic ).channels.size() );
+            if( l == 1 ) cluster_size_eta_m_ly1.Fill( clusters.at( ic ).channels.size() );
+            if( l == 2 ) cluster_size_eta_m_ly2.Fill( clusters.at( ic ).channels.size() );
           }
         }
       }
@@ -1056,23 +1063,23 @@ public:
         eff_err_AND[l]       = sqrt( eff_AND[l] * ( 1.0 - eff_AND[l] ) / good_triggers_AND[l] );
         eff_err_OR_Acc[l]    = sqrt( eff_OR_Acc[l] * ( 1.0 - eff_OR_Acc[l] ) / good_triggers_OR[l] );
         eff_err_AND_Acc[l]   = sqrt( eff_AND_Acc[l] * ( 1.0 - eff_AND_Acc[l] ) / good_triggers_AND[l] );
-        hEff1Cluster[l]->SetBinContent( 1, eff_eta_p[l] );
-        hEff1Cluster[l]->SetBinError( 1, eff_err_eta_p[l] );
-        hEff1Cluster[l]->SetBinContent( 2, eff_eta_m[l] );
-        hEff1Cluster[l]->SetBinError( 2, eff_err_eta_m[l] );
-        hEff1Cluster[l]->SetBinContent( 3, eff_OR[l] );
-        hEff1Cluster[l]->SetBinError( 3, eff_err_OR[l] );
-        hEff1Cluster[l]->SetBinContent( 4, eff_AND[l] );
-        hEff1Cluster[l]->SetBinError( 4, eff_err_AND[l] );
+        hEff1Cluster[l].SetBinContent( 1, eff_eta_p[l] );
+        hEff1Cluster[l].SetBinError( 1, eff_err_eta_p[l] );
+        hEff1Cluster[l].SetBinContent( 2, eff_eta_m[l] );
+        hEff1Cluster[l].SetBinError( 2, eff_err_eta_m[l] );
+        hEff1Cluster[l].SetBinContent( 3, eff_OR[l] );
+        hEff1Cluster[l].SetBinError( 3, eff_err_OR[l] );
+        hEff1Cluster[l].SetBinContent( 4, eff_AND[l] );
+        hEff1Cluster[l].SetBinError( 4, eff_err_AND[l] );
 
-        hEff1ClusterACC[l]->SetBinContent( 1, eff_eta_p_Acc[l] );
-        hEff1ClusterACC[l]->SetBinError( 1, eff_err_eta_p_Acc[l] );
-        hEff1ClusterACC[l]->SetBinContent( 2, eff_eta_m_Acc[l] );
-        hEff1ClusterACC[l]->SetBinError( 2, eff_err_eta_m_Acc[l] );
-        hEff1ClusterACC[l]->SetBinContent( 3, eff_OR_Acc[l] );
-        hEff1ClusterACC[l]->SetBinError( 3, eff_err_OR_Acc[l] );
-        hEff1ClusterACC[l]->SetBinContent( 4, eff_AND_Acc[l] );
-        hEff1ClusterACC[l]->SetBinError( 4, eff_err_AND_Acc[l] );
+        hEff1ClusterACC[l].SetBinContent( 1, eff_eta_p_Acc[l] );
+        hEff1ClusterACC[l].SetBinError( 1, eff_err_eta_p_Acc[l] );
+        hEff1ClusterACC[l].SetBinContent( 2, eff_eta_m_Acc[l] );
+        hEff1ClusterACC[l].SetBinError( 2, eff_err_eta_m_Acc[l] );
+        hEff1ClusterACC[l].SetBinContent( 3, eff_OR_Acc[l] );
+        hEff1ClusterACC[l].SetBinError( 3, eff_err_OR_Acc[l] );
+        hEff1ClusterACC[l].SetBinContent( 4, eff_AND_Acc[l] );
+        hEff1ClusterACC[l].SetBinError( 4, eff_err_AND_Acc[l] );
       }
     }
 
@@ -1102,12 +1109,12 @@ public:
 private:
   void prepareHistograms()
   {
-    strips_eta_p_layer0->SetLineColor( kRed );
-    strips_eta_p_layer1->SetLineColor( kBlue );
-    strips_eta_p_layer2->SetLineColor( kGreen );
-    strips_eta_m_layer0->SetLineColor( kRed );
-    strips_eta_m_layer1->SetLineColor( kBlue );
-    strips_eta_m_layer2->SetLineColor( kGreen );
+    strips_eta_p_layer0.SetLineColor( kRed );
+    strips_eta_p_layer1.SetLineColor( kBlue );
+    strips_eta_p_layer2.SetLineColor( kGreen );
+    strips_eta_m_layer0.SetLineColor( kRed );
+    strips_eta_m_layer1.SetLineColor( kBlue );
+    strips_eta_m_layer2.SetLineColor( kGreen );
     for( std::size_t l = 0; l < 3; l++ )
     {
       hEff1[l] = new TH1F( Form( "efficiency_ext_trigger_layer%d", l ), Form( "Efficiency layer %d (with external trigger only);type;efficiency", l ), 4, 0.5, 4.5 );
@@ -1121,17 +1128,17 @@ private:
   {
     for( std::size_t l = 0; l < 3; l++ )
     {
-      hEff1Cluster[l] = new TH1F( Form( "efficiency_rpc_trig_layer%d", l ), Form( "Efficiency layer %d (trigger with other singlets) done with clusters;type;efficiency", l ), 4, 0.5, 4.5 );
-      hEff1Cluster[l]->GetXaxis()->SetBinLabel( 1, "eta_p" );
-      hEff1Cluster[l]->GetXaxis()->SetBinLabel( 2, "eta_m" );
-      hEff1Cluster[l]->GetXaxis()->SetBinLabel( 3, "OR" );
-      hEff1Cluster[l]->GetXaxis()->SetBinLabel( 4, "AND" );
+      hEff1Cluster[l] = TH1F( Form( "efficiency_rpc_trig_layer%d", l ), Form( "Efficiency layer %d (trigger with other singlets) done with clusters;type;efficiency", l ), 4, 0.5, 4.5 );
+      hEff1Cluster[l].GetXaxis()->SetBinLabel( 1, "eta_p" );
+      hEff1Cluster[l].GetXaxis()->SetBinLabel( 2, "eta_m" );
+      hEff1Cluster[l].GetXaxis()->SetBinLabel( 3, "OR" );
+      hEff1Cluster[l].GetXaxis()->SetBinLabel( 4, "AND" );
 
-      hEff1ClusterACC[l] = new TH1F( Form( "efficiency_rpc_trig_layer%d_acc", l ), Form( "Efficiency layer %d (trigger with other singlets) done with clusters and geometrical acceptance;type;efficiency", l ), 4, 0.5, 4.5 );
-      hEff1ClusterACC[l]->GetXaxis()->SetBinLabel( 1, "eta_p" );
-      hEff1ClusterACC[l]->GetXaxis()->SetBinLabel( 2, "eta_m" );
-      hEff1ClusterACC[l]->GetXaxis()->SetBinLabel( 3, "OR" );
-      hEff1ClusterACC[l]->GetXaxis()->SetBinLabel( 4, "AND" );
+      hEff1ClusterACC[l] = TH1F( Form( "efficiency_rpc_trig_layer%d_acc", l ), Form( "Efficiency layer %d (trigger with other singlets) done with clusters and geometrical acceptance;type;efficiency", l ), 4, 0.5, 4.5 );
+      hEff1ClusterACC[l].GetXaxis()->SetBinLabel( 1, "eta_p" );
+      hEff1ClusterACC[l].GetXaxis()->SetBinLabel( 2, "eta_m" );
+      hEff1ClusterACC[l].GetXaxis()->SetBinLabel( 3, "OR" );
+      hEff1ClusterACC[l].GetXaxis()->SetBinLabel( 4, "AND" );
     }
   }
   std::map<std::string, std::vector<int>> cabling_maps;
@@ -1143,7 +1150,7 @@ private:
 
   // Raw things
   TFile*           m_rawdata_file{ nullptr };
-  int              nHits = 0;
+  int              nHits{ 0 };
   std::vector<int> hit_dct;      // DCT 0-3
   std::vector<int> hit_channel;  // channel 1-144
   std::vector<int> hit_clk;      // time of hit in readout window (tick = 3.125 ns)
@@ -1153,19 +1160,19 @@ private:
   std::vector<int> hit_rise;   // rise or fall
   long int         event{ 0 };
   int              clk{ 0 };
-  TTree*           raw_tree = nullptr;
+  TTree*           raw_tree{ nullptr };
 
   // Events things
   std::vector<int> cabling_map;
   TFile*           m_event_file{ nullptr };
-  TTree*           events_tree = nullptr;
+  TTree*           events_tree{ nullptr };
   std::vector<int> hit_bcid;
   std::vector<int> hit_rawbcout;
   std::vector<int> hit_bcout;
   std::vector<int> hit_layer;
   std::vector<int> hit_strip;
 
-  int              nProc = 0;
+  int              nProc{ 0 };
   std::vector<int> proc_layer;
   std::vector<int> proc_strip;
   std::vector<int> proc_time1;
@@ -1175,11 +1182,11 @@ private:
   std::vector<int> proc_deltat;
   std::vector<int> proc_dt_trig1;
   std::vector<int> proc_dt_trig2;
-  int              trig_time = -1;
+  int              trig_time{ -1 };
 
-  int              nClus_l0 = 0;
-  int              nClus_l1 = 0;
-  int              nClus_l2 = 0;
+  int              nClus_l0{ 0 };
+  int              nClus_l1{ 0 };
+  int              nClus_l2{ 0 };
   std::vector<int> clus_strip_l0;
   std::vector<int> clus_strip_l1;
   std::vector<int> clus_strip_l2;
@@ -1216,45 +1223,49 @@ private:
   std::vector<int> clus_mult_l1;
   std::vector<int> clus_mult_l2;
 
-  TH2D*                tot_eta_p_ly0_2D       = new TH2D( "tot_eta_p_ly0_2D", "tot_eta_p_ly0_2D", 48, 0, 48, 30, 0, 30 );
-  TH2D*                tot_eta_p_ly1_2D       = new TH2D( "tot_eta_p_ly1_2D", "tot_eta_p_ly1_2D", 48, 0, 48, 30, 0, 30 );
-  TH2D*                tot_eta_p_ly2_2D       = new TH2D( "tot_eta_p_ly2_2D", "tot_eta_p_ly2_2D", 48, 0, 48, 30, 0, 30 );
-  TH2D*                tot_eta_m_ly0_2D       = new TH2D( "tot_eta_m_ly0_2D", "tot_eta_m_ly0_2D", 48, 0, 48, 30, 0, 30 );
-  TH2D*                tot_eta_m_ly1_2D       = new TH2D( "tot_eta_m_ly1_2D", "tot_eta_m_ly1_2D", 48, 0, 48, 30, 0, 30 );
-  TH2D*                tot_eta_m_ly2_2D       = new TH2D( "tot_eta_m_ly2_2D", "tot_eta_m_ly2_2D", 48, 0, 48, 30, 0, 30 );
-  TH1D*                tot_eta_p_ly0_1D       = new TH1D( "tot_eta_p_ly0_1D", "tot_eta_p_ly0_1D", 30, 0, 30 );
-  TH1D*                tot_eta_p_ly1_1D       = new TH1D( "tot_eta_p_ly1_1D", "tot_eta_p_ly1_1D", 30, 0, 30 );
-  TH1D*                tot_eta_p_ly2_1D       = new TH1D( "tot_eta_p_ly2_1D", "tot_eta_p_ly2_1D", 30, 0, 30 );
-  TH1D*                tot_eta_m_ly0_1D       = new TH1D( "tot_eta_m_ly0_1D", "tot_eta_m_ly0_1D", 30, 0, 30 );
-  TH1D*                tot_eta_m_ly1_1D       = new TH1D( "tot_eta_m_ly1_1D", "tot_eta_m_ly1_1D", 30, 0, 30 );
-  TH1D*                tot_eta_m_ly2_1D       = new TH1D( "tot_eta_m_ly2_1D", "tot_eta_m_ly2_1D", 30, 0, 30 );
-  TH2D*                dt_trig_vs_strip_eta_p = new TH2D( "dt_trig_vs_strip_eta_p", "dt_trig_vs_strip_eta_p", 144, 0, 144, 350, -300, 50 );
-  TH2D*                dt_trig_vs_strip_eta_m = new TH2D( "dt_trig_vs_strip_eta_m", "dt_trig_vs_strip_eta_m", 144, 0, 144, 350, -300, 50 );
-  TH1D*                strips_eta_p_layer0    = new TH1D( "strips_eta_p_layer0", "strips_eta_p_layer0", 48, 0, 48 );
-  TH1D*                strips_eta_p_layer1    = new TH1D( "strips_eta_p_layer1", "strips_eta_p_layer1", 48, 0, 48 );
-  TH1D*                strips_eta_p_layer2    = new TH1D( "strips_eta_p_layer2", "strips_eta_p_layer2", 48, 0, 48 );
-  TH1D*                strips_eta_m_layer0    = new TH1D( "strips_eta_m_layer0", "strips_eta_m_layer0", 48, 0, 48 );
-  TH1D*                strips_eta_m_layer1    = new TH1D( "strips_eta_m_layer1", "strips_eta_m_layer1", 48, 0, 48 );
-  TH1D*                strips_eta_m_layer2    = new TH1D( "strips_eta_m_layer2", "strips_eta_m_layer2", 48, 0, 48 );
-  int                  trig_evts              = 0;
+  TH2D                 tot_eta_p_ly0_2D{ "tot_eta_p_ly0_2D", "tot_eta_p_ly0_2D", 48, 0, 48, 30, 0, 30 };
+  TH2D                 tot_eta_p_ly1_2D{ "tot_eta_p_ly1_2D", "tot_eta_p_ly1_2D", 48, 0, 48, 30, 0, 30 };
+  TH2D                 tot_eta_p_ly2_2D{ "tot_eta_p_ly2_2D", "tot_eta_p_ly2_2D", 48, 0, 48, 30, 0, 30 };
+  TH2D                 tot_eta_m_ly0_2D{ "tot_eta_m_ly0_2D", "tot_eta_m_ly0_2D", 48, 0, 48, 30, 0, 30 };
+  TH2D                 tot_eta_m_ly1_2D{ "tot_eta_m_ly1_2D", "tot_eta_m_ly1_2D", 48, 0, 48, 30, 0, 30 };
+  TH2D                 tot_eta_m_ly2_2D{ "tot_eta_m_ly2_2D", "tot_eta_m_ly2_2D", 48, 0, 48, 30, 0, 30 };
+  TH1D                 tot_eta_p_ly0_1D{ "tot_eta_p_ly0_1D", "tot_eta_p_ly0_1D", 30, 0, 30 };
+  TH1D                 tot_eta_p_ly1_1D{ "tot_eta_p_ly1_1D", "tot_eta_p_ly1_1D", 30, 0, 30 };
+  TH1D                 tot_eta_p_ly2_1D{ "tot_eta_p_ly2_1D", "tot_eta_p_ly2_1D", 30, 0, 30 };
+  TH1D                 tot_eta_m_ly0_1D{ "tot_eta_m_ly0_1D", "tot_eta_m_ly0_1D", 30, 0, 30 };
+  TH1D                 tot_eta_m_ly1_1D{ "tot_eta_m_ly1_1D", "tot_eta_m_ly1_1D", 30, 0, 30 };
+  TH1D                 tot_eta_m_ly2_1D{ "tot_eta_m_ly2_1D", "tot_eta_m_ly2_1D", 30, 0, 30 };
+  TH2D                 dt_trig_vs_strip_eta_p{ "dt_trig_vs_strip_eta_p", "dt_trig_vs_strip_eta_p", 144, 0, 144, 350, -300, 50 };
+  TH2D                 dt_trig_vs_strip_eta_m{ "dt_trig_vs_strip_eta_m", "dt_trig_vs_strip_eta_m", 144, 0, 144, 350, -300, 50 };
+  TH1D                 strips_eta_p_layer0{ "strips_eta_p_layer0", "strips_eta_p_layer0", 48, 0, 48 };
+  TH1D                 strips_eta_p_layer1{ "strips_eta_p_layer1", "strips_eta_p_layer1", 48, 0, 48 };
+  TH1D                 strips_eta_p_layer2{ "strips_eta_p_layer2", "strips_eta_p_layer2", 48, 0, 48 };
+  TH1D                 strips_eta_m_layer0{ "strips_eta_m_layer0", "strips_eta_m_layer0", 48, 0, 48 };
+  TH1D                 strips_eta_m_layer1{ "strips_eta_m_layer1", "strips_eta_m_layer1", 48, 0, 48 };
+  TH1D                 strips_eta_m_layer2{ "strips_eta_m_layer2", "strips_eta_m_layer2", 48, 0, 48 };
+  int                  trig_evts{ 0 };
   // Efficiency stufs
   std::array<TH1F*, 3> hEff1;
-  int                  evts_eta_p[3] = { 0, 0, 0 };
-  int                  evts_eta_m[3] = { 0, 0, 0 };
-  int                  evts_or[3]    = { 0, 0, 0 };
-  int                  evts_and[3]   = { 0, 0, 0 };
+  std::array<int, 3>   evts_eta_p{ 0, 0, 0 };
+  std::array<int, 3>   evts_eta_m{ 0, 0, 0 };
+  std::array<int, 3>   evts_or{ 0, 0, 0 };
+  std::array<int, 3>   evts_and{ 0, 0, 0 };
 
-  int evts_eta_p_rpc_trig[3] = { 0, 0, 0 };
-  int evts_eta_m_rpc_trig[3] = { 0, 0, 0 };
-  int evts_OR_rpc_trig[3]    = { 0, 0, 0 };
-  int evts_AND_rpc_trig[3]   = { 0, 0, 0 };
-  int evts_rpc_trig_denom[3] = { 0, 0, 0 };
+  std::array<int, 3> evts_eta_p_rpc_trig{ 0, 0, 0 };
+  std::array<int, 3> evts_eta_m_rpc_trig{ 0, 0, 0 };
+  std::array<int, 3> evts_OR_rpc_trig{ 0, 0, 0 };
+  std::array<int, 3> evts_AND_rpc_trig{ 0, 0, 0 };
+  std::array<int, 3> evts_rpc_trig_denom{ 0, 0, 0 };
 
   // Cluster things
   TTree*                                    clus_tree{ nullptr };
-  int                                       nClus          = 0;
-  int                                       nClus_l0_eta_p = 0, nClus_l1_eta_p = 0, nClus_l2_eta_p = 0;
-  int                                       nClus_l0_eta_m = 0, nClus_l1_eta_m = 0, nClus_l2_eta_m = 0;
+  int                                       nClus{ 0 };
+  int                                       nClus_l0_eta_p{ 0 };
+  int                                       nClus_l1_eta_p{ 0 };
+  int                                       nClus_l2_eta_p{ 0 };
+  int                                       nClus_l0_eta_m{ 0 };
+  int                                       nClus_l1_eta_m{ 0 };
+  int                                       nClus_l2_eta_m{ 0 };
   std::vector<int>                          clus_etaSide;
   std::vector<int>                          clus_layer;
   std::vector<int>                          clus_centerStrip;
@@ -1264,12 +1275,12 @@ private:
   std::vector<int>                          clus_totSum;
   std::vector<int>                          clus_dt_trig;
   std::vector<int>                          clus_size;
-  TH1D*                                     cluster_size_eta_p_ly0 = new TH1D( "cluster_size_eta_p_ly0", "cluster_size_eta_p_ly0", 10, 0, 10 );
-  TH1D*                                     cluster_size_eta_p_ly1 = new TH1D( "cluster_size_eta_p_ly1", "cluster_size_eta_p_ly1", 10, 0, 10 );
-  TH1D*                                     cluster_size_eta_p_ly2 = new TH1D( "cluster_size_eta_p_ly2", "cluster_size_eta_p_ly2", 10, 0, 10 );
-  TH1D*                                     cluster_size_eta_m_ly0 = new TH1D( "cluster_size_eta_m_ly0", "cluster_size_eta_m_ly0", 10, 0, 10 );
-  TH1D*                                     cluster_size_eta_m_ly1 = new TH1D( "cluster_size_eta_m_ly1", "cluster_size_eta_m_ly1", 10, 0, 10 );
-  TH1D*                                     cluster_size_eta_m_ly2 = new TH1D( "cluster_size_eta_m_ly2", "cluster_size_eta_m_ly2", 10, 0, 10 );
+  TH1D                                      cluster_size_eta_p_ly0{ "cluster_size_eta_p_ly0", "cluster_size_eta_p_ly0", 10, 0, 10 };
+  TH1D                                      cluster_size_eta_p_ly1{ "cluster_size_eta_p_ly1", "cluster_size_eta_p_ly1", 10, 0, 10 };
+  TH1D                                      cluster_size_eta_p_ly2{ "cluster_size_eta_p_ly2", "cluster_size_eta_p_ly2", 10, 0, 10 };
+  TH1D                                      cluster_size_eta_m_ly0{ "cluster_size_eta_m_ly0", "cluster_size_eta_m_ly0", 10, 0, 10 };
+  TH1D                                      cluster_size_eta_m_ly1{ "cluster_size_eta_m_ly1", "cluster_size_eta_m_ly1", 10, 0, 10 };
+  TH1D                                      cluster_size_eta_m_ly2{ "cluster_size_eta_m_ly2", "cluster_size_eta_m_ly2", 10, 0, 10 };
   std::map<std::string, std::map<int, int>> good_hits;                                                                                                             //good hit event counters for efficiency computation
   std::map<std::string, std::map<int, int>> good_triggers     = { { "eta_p", { { 0, 0 }, { 1, 0 }, { 2, 0 } } }, { "eta_m", { { 0, 0 }, { 1, 0 }, { 2, 0 } } } };  //good triggered event counters for efficiency computation
   std::map<int, int>                        good_triggers_OR  = { { 0, 0 }, { 1, 0 }, { 2, 0 } };
@@ -1296,14 +1307,10 @@ private:
   std::array<double, 3> eff_err_OR_Acc{ 0., 0., 0. };
   std::array<double, 3> eff_err_AND_Acc{ 0., 0., 0. };
   std::map<int, float>  geom_acc;
-  //if (singlets) {
-  //    geom_acc = {{0, 0.836}, {1, 0.992}, {2, 0.856}}; //geometrical acceptance for each layer (from simulation)
-  //} else {
-  //    geom_acc = {{0, 0.959}, {1, 1}, {2, 0.951}}; // no geometrical correction if using triplets
-  //}
 
-  std::array<TH1F*, 3> hEff1Cluster;
-  std::array<TH1F*, 3> hEff1ClusterACC;
+  std::array<TH1F, 3> hEff1Cluster;
+  std::array<TH1F, 3> hEff1ClusterACC;
+  bool                singlets{ false };
 
   int tower_width = 48;  // default values //TODO understand that stufs
 };
