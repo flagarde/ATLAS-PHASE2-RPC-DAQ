@@ -533,10 +533,9 @@ public:
     }
 
     // FAST ARRAYS: Using memset
-    int hit[3][49];
-    int hitmult[3][49];
-    memset( hit, -1, sizeof( hit ) );
-    memset( hitmult, 0, sizeof( hitmult ) );
+    std::array<std::array<int, 49>, 3> hit;
+    for( auto& row: hit ) row.fill( -1 );
+    std::array<std::array<int, 49>, 3> hitmult{};
 
     for( int iprc = 0; iprc < nProc; iprc++ )
     {
