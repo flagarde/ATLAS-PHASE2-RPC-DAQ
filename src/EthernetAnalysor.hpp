@@ -91,26 +91,26 @@ public:
     clear_raw_data();
     clear_events_data();
     clear_cluster_data();
-    tot_eta_p_ly0_2D.Reset();
-    tot_eta_p_ly1_2D.Reset();
-    tot_eta_p_ly2_2D.Reset();
-    tot_eta_m_ly0_2D.Reset();
-    tot_eta_m_ly1_2D.Reset();
-    tot_eta_m_ly2_2D.Reset();
-    tot_eta_p_ly0_1D.Reset();
-    tot_eta_p_ly1_1D.Reset();
-    tot_eta_p_ly2_1D.Reset();
-    tot_eta_m_ly0_1D.Reset();
-    tot_eta_m_ly1_1D.Reset();
-    tot_eta_m_ly2_1D.Reset();
-    dt_trig_vs_strip_eta_p.Reset();
-    dt_trig_vs_strip_eta_m.Reset();
-    strips_eta_p_layer0.Reset();
-    strips_eta_p_layer1.Reset();
-    strips_eta_p_layer2.Reset();
-    strips_eta_m_layer0.Reset();
-    strips_eta_m_layer1.Reset();
-    strips_eta_m_layer2.Reset();
+    tot_eta_p_ly0_2D->Reset();
+    tot_eta_p_ly1_2D->Reset();
+    tot_eta_p_ly2_2D->Reset();
+    tot_eta_m_ly0_2D->Reset();
+    tot_eta_m_ly1_2D->Reset();
+    tot_eta_m_ly2_2D->Reset();
+    tot_eta_p_ly0_1D->Reset();
+    tot_eta_p_ly1_1D->Reset();
+    tot_eta_p_ly2_1D->Reset();
+    tot_eta_m_ly0_1D->Reset();
+    tot_eta_m_ly1_1D->Reset();
+    tot_eta_m_ly2_1D->Reset();
+    dt_trig_vs_strip_eta_p->Reset();
+    dt_trig_vs_strip_eta_m->Reset();
+    strips_eta_p_layer0->Reset();
+    strips_eta_p_layer1->Reset();
+    strips_eta_p_layer2->Reset();
+    strips_eta_m_layer0->Reset();
+    strips_eta_m_layer1->Reset();
+    strips_eta_m_layer2->Reset();
     trig_evts = 0;
     // Efficiency stufs
     for( std::size_t l = 0; l < 3; l++ )
@@ -632,45 +632,45 @@ public:
 
     for( std::size_t ip = 0; ip < nProc; ip++ )
     {
-      if( proc_time1[ip] > -1 ) dt_trig_vs_strip_eta_p.Fill( proc_layer[ip] * 48 + proc_strip[ip], ( proc_time1[ip] - trig_time ) );
-      if( proc_time2[ip] > -1 ) dt_trig_vs_strip_eta_m.Fill( proc_layer[ip] * 48 + proc_strip[ip], ( proc_time2[ip] - trig_time ) );
+      if( proc_time1[ip] > -1 ) dt_trig_vs_strip_eta_p->Fill( proc_layer[ip] * 48 + proc_strip[ip], ( proc_time1[ip] - trig_time ) );
+      if( proc_time2[ip] > -1 ) dt_trig_vs_strip_eta_m->Fill( proc_layer[ip] * 48 + proc_strip[ip], ( proc_time2[ip] - trig_time ) );
 
-      if( proc_layer[ip] == 0 && proc_time1[ip] > -1 ) strips_eta_p_layer0.Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 1 && proc_time1[ip] > -1 ) strips_eta_p_layer1.Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 2 && proc_time1[ip] > -1 ) strips_eta_p_layer2.Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 0 && proc_time2[ip] > -1 ) strips_eta_m_layer0.Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 1 && proc_time2[ip] > -1 ) strips_eta_m_layer1.Fill( proc_strip[ip] );
-      if( proc_layer[ip] == 2 && proc_time2[ip] > -1 ) strips_eta_m_layer2.Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 0 && proc_time1[ip] > -1 ) strips_eta_p_layer0->Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 1 && proc_time1[ip] > -1 ) strips_eta_p_layer1->Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 2 && proc_time1[ip] > -1 ) strips_eta_p_layer2->Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 0 && proc_time2[ip] > -1 ) strips_eta_m_layer0->Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 1 && proc_time2[ip] > -1 ) strips_eta_m_layer1->Fill( proc_strip[ip] );
+      if( proc_layer[ip] == 2 && proc_time2[ip] > -1 ) strips_eta_m_layer2->Fill( proc_strip[ip] );
 
       if( proc_layer[ip] == 0 && proc_time1[ip] > -1 && proc_tot1[ip] != 9999 )
       {
-        tot_eta_p_ly0_1D.Fill( proc_tot1[ip] );
-        tot_eta_p_ly0_2D.Fill( proc_strip[ip], proc_tot1[ip] );
+        tot_eta_p_ly0_1D->Fill( proc_tot1[ip] );
+        tot_eta_p_ly0_2D->Fill( proc_strip[ip], proc_tot1[ip] );
       }
       if( proc_layer[ip] == 1 && proc_time1[ip] > -1 && proc_tot1[ip] != 9999 )
       {
-        tot_eta_p_ly1_1D.Fill( proc_tot1[ip] );
-        tot_eta_p_ly1_2D.Fill( proc_strip[ip], proc_tot1[ip] );
+        tot_eta_p_ly1_1D->Fill( proc_tot1[ip] );
+        tot_eta_p_ly1_2D->Fill( proc_strip[ip], proc_tot1[ip] );
       }
       if( proc_layer[ip] == 2 && proc_time1[ip] > -1 && proc_tot1[ip] != 9999 )
       {
-        tot_eta_p_ly2_1D.Fill( proc_tot1[ip] );
-        tot_eta_p_ly2_2D.Fill( proc_strip[ip], proc_tot1[ip] );
+        tot_eta_p_ly2_1D->Fill( proc_tot1[ip] );
+        tot_eta_p_ly2_2D->Fill( proc_strip[ip], proc_tot1[ip] );
       }
       if( proc_layer[ip] == 0 && proc_time2[ip] > -1 && proc_tot2[ip] != 9999 )
       {
-        tot_eta_m_ly0_1D.Fill( proc_tot2[ip] );
-        tot_eta_m_ly0_2D.Fill( proc_strip[ip], proc_tot2[ip] );
+        tot_eta_m_ly0_1D->Fill( proc_tot2[ip] );
+        tot_eta_m_ly0_2D->Fill( proc_strip[ip], proc_tot2[ip] );
       }
       if( proc_layer[ip] == 1 && proc_time2[ip] > -1 && proc_tot2[ip] != 9999 )
       {
-        tot_eta_m_ly1_1D.Fill( proc_tot2[ip] );
-        tot_eta_m_ly1_2D.Fill( proc_strip[ip], proc_tot2[ip] );
+        tot_eta_m_ly1_1D->Fill( proc_tot2[ip] );
+        tot_eta_m_ly1_2D->Fill( proc_strip[ip], proc_tot2[ip] );
       }
       if( proc_layer[ip] == 2 && proc_time2[ip] > -1 && proc_tot2[ip] != 9999 )
       {
-        tot_eta_m_ly2_1D.Fill( proc_tot2[ip] );
-        tot_eta_m_ly2_2D.Fill( proc_strip[ip], proc_tot2[ip] );
+        tot_eta_m_ly2_1D->Fill( proc_tot2[ip] );
+        tot_eta_m_ly2_2D->Fill( proc_strip[ip], proc_tot2[ip] );
       }
     }
 
@@ -896,15 +896,15 @@ public:
           clus_size.push_back( clusters.at( ic ).channels.size() );
           if( eta == "eta_p" )
           {
-            if( l == 0 ) cluster_size_eta_p_ly0.Fill( clusters.at( ic ).channels.size() );
-            if( l == 1 ) cluster_size_eta_p_ly1.Fill( clusters.at( ic ).channels.size() );
-            if( l == 2 ) cluster_size_eta_p_ly2.Fill( clusters.at( ic ).channels.size() );
+            if( l == 0 ) cluster_size_eta_p_ly0->Fill( clusters.at( ic ).channels.size() );
+            if( l == 1 ) cluster_size_eta_p_ly1->Fill( clusters.at( ic ).channels.size() );
+            if( l == 2 ) cluster_size_eta_p_ly2->Fill( clusters.at( ic ).channels.size() );
           }
           else
           {
-            if( l == 0 ) cluster_size_eta_m_ly0.Fill( clusters.at( ic ).channels.size() );
-            if( l == 1 ) cluster_size_eta_m_ly1.Fill( clusters.at( ic ).channels.size() );
-            if( l == 2 ) cluster_size_eta_m_ly2.Fill( clusters.at( ic ).channels.size() );
+            if( l == 0 ) cluster_size_eta_m_ly0->Fill( clusters.at( ic ).channels.size() );
+            if( l == 1 ) cluster_size_eta_m_ly1->Fill( clusters.at( ic ).channels.size() );
+            if( l == 2 ) cluster_size_eta_m_ly2->Fill( clusters.at( ic ).channels.size() );
           }
         }
       }
@@ -1108,12 +1108,12 @@ public:
 private:
   void prepareHistograms()
   {
-    strips_eta_p_layer0.SetLineColor( kRed );
-    strips_eta_p_layer1.SetLineColor( kBlue );
-    strips_eta_p_layer2.SetLineColor( kGreen );
-    strips_eta_m_layer0.SetLineColor( kRed );
-    strips_eta_m_layer1.SetLineColor( kBlue );
-    strips_eta_m_layer2.SetLineColor( kGreen );
+    strips_eta_p_layer0->SetLineColor( kRed );
+    strips_eta_p_layer1->SetLineColor( kBlue );
+    strips_eta_p_layer2->SetLineColor( kGreen );
+    strips_eta_m_layer0->SetLineColor( kRed );
+    strips_eta_m_layer1->SetLineColor( kBlue );
+    strips_eta_m_layer2->SetLineColor( kGreen );
     for( std::size_t l = 0; l < 3; l++ )
     {
       hEff1[l] = new TH1F( Form( "efficiency_ext_trigger_layer%d", l ), Form( "Efficiency layer %d (with external trigger only);type;efficiency", l ), 4, 0.5, 4.5 );
@@ -1222,26 +1222,26 @@ private:
   std::vector<int> clus_mult_l1;
   std::vector<int> clus_mult_l2;
 
-  TH2D                 tot_eta_p_ly0_2D{ "tot_eta_p_ly0_2D", "tot_eta_p_ly0_2D", 48, 0, 48, 30, 0, 30 };
-  TH2D                 tot_eta_p_ly1_2D{ "tot_eta_p_ly1_2D", "tot_eta_p_ly1_2D", 48, 0, 48, 30, 0, 30 };
-  TH2D                 tot_eta_p_ly2_2D{ "tot_eta_p_ly2_2D", "tot_eta_p_ly2_2D", 48, 0, 48, 30, 0, 30 };
-  TH2D                 tot_eta_m_ly0_2D{ "tot_eta_m_ly0_2D", "tot_eta_m_ly0_2D", 48, 0, 48, 30, 0, 30 };
-  TH2D                 tot_eta_m_ly1_2D{ "tot_eta_m_ly1_2D", "tot_eta_m_ly1_2D", 48, 0, 48, 30, 0, 30 };
-  TH2D                 tot_eta_m_ly2_2D{ "tot_eta_m_ly2_2D", "tot_eta_m_ly2_2D", 48, 0, 48, 30, 0, 30 };
-  TH1D                 tot_eta_p_ly0_1D{ "tot_eta_p_ly0_1D", "tot_eta_p_ly0_1D", 30, 0, 30 };
-  TH1D                 tot_eta_p_ly1_1D{ "tot_eta_p_ly1_1D", "tot_eta_p_ly1_1D", 30, 0, 30 };
-  TH1D                 tot_eta_p_ly2_1D{ "tot_eta_p_ly2_1D", "tot_eta_p_ly2_1D", 30, 0, 30 };
-  TH1D                 tot_eta_m_ly0_1D{ "tot_eta_m_ly0_1D", "tot_eta_m_ly0_1D", 30, 0, 30 };
-  TH1D                 tot_eta_m_ly1_1D{ "tot_eta_m_ly1_1D", "tot_eta_m_ly1_1D", 30, 0, 30 };
-  TH1D                 tot_eta_m_ly2_1D{ "tot_eta_m_ly2_1D", "tot_eta_m_ly2_1D", 30, 0, 30 };
-  TH2D                 dt_trig_vs_strip_eta_p{ "dt_trig_vs_strip_eta_p", "dt_trig_vs_strip_eta_p", 144, 0, 144, 350, -300, 50 };
-  TH2D                 dt_trig_vs_strip_eta_m{ "dt_trig_vs_strip_eta_m", "dt_trig_vs_strip_eta_m", 144, 0, 144, 350, -300, 50 };
-  TH1D                 strips_eta_p_layer0{ "strips_eta_p_layer0", "strips_eta_p_layer0", 48, 0, 48 };
-  TH1D                 strips_eta_p_layer1{ "strips_eta_p_layer1", "strips_eta_p_layer1", 48, 0, 48 };
-  TH1D                 strips_eta_p_layer2{ "strips_eta_p_layer2", "strips_eta_p_layer2", 48, 0, 48 };
-  TH1D                 strips_eta_m_layer0{ "strips_eta_m_layer0", "strips_eta_m_layer0", 48, 0, 48 };
-  TH1D                 strips_eta_m_layer1{ "strips_eta_m_layer1", "strips_eta_m_layer1", 48, 0, 48 };
-  TH1D                 strips_eta_m_layer2{ "strips_eta_m_layer2", "strips_eta_m_layer2", 48, 0, 48 };
+  TH2D*                tot_eta_p_ly0_2D       = new TH2D( "tot_eta_p_ly0_2D", "tot_eta_p_ly0_2D", 48, 0, 48, 30, 0, 30 );
+  TH2D*                tot_eta_p_ly1_2D       = new TH2D( "tot_eta_p_ly1_2D", "tot_eta_p_ly1_2D", 48, 0, 48, 30, 0, 30 );
+  TH2D*                tot_eta_p_ly2_2D       = new TH2D( "tot_eta_p_ly2_2D", "tot_eta_p_ly2_2D", 48, 0, 48, 30, 0, 30 );
+  TH2D*                tot_eta_m_ly0_2D       = new TH2D( "tot_eta_m_ly0_2D", "tot_eta_m_ly0_2D", 48, 0, 48, 30, 0, 30 );
+  TH2D*                tot_eta_m_ly1_2D       = new TH2D( "tot_eta_m_ly1_2D", "tot_eta_m_ly1_2D", 48, 0, 48, 30, 0, 30 );
+  TH2D*                tot_eta_m_ly2_2D       = new TH2D( "tot_eta_m_ly2_2D", "tot_eta_m_ly2_2D", 48, 0, 48, 30, 0, 30 );
+  TH1D*                tot_eta_p_ly0_1D       = new TH1D( "tot_eta_p_ly0_1D", "tot_eta_p_ly0_1D", 30, 0, 30 );
+  TH1D*                tot_eta_p_ly1_1D       = new TH1D( "tot_eta_p_ly1_1D", "tot_eta_p_ly1_1D", 30, 0, 30 );
+  TH1D*                tot_eta_p_ly2_1D       = new TH1D( "tot_eta_p_ly2_1D", "tot_eta_p_ly2_1D", 30, 0, 30 );
+  TH1D*                tot_eta_m_ly0_1D       = new TH1D( "tot_eta_m_ly0_1D", "tot_eta_m_ly0_1D", 30, 0, 30 );
+  TH1D*                tot_eta_m_ly1_1D       = new TH1D( "tot_eta_m_ly1_1D", "tot_eta_m_ly1_1D", 30, 0, 30 );
+  TH1D*                tot_eta_m_ly2_1D       = new TH1D( "tot_eta_m_ly2_1D", "tot_eta_m_ly2_1D", 30, 0, 30 );
+  TH2D*                dt_trig_vs_strip_eta_p = new TH2D( "dt_trig_vs_strip_eta_p", "dt_trig_vs_strip_eta_p", 144, 0, 144, 350, -300, 50 );
+  TH2D*                dt_trig_vs_strip_eta_m = new TH2D( "dt_trig_vs_strip_eta_m", "dt_trig_vs_strip_eta_m", 144, 0, 144, 350, -300, 50 );
+  TH1D*                strips_eta_p_layer0    = new TH1D( "strips_eta_p_layer0", "strips_eta_p_layer0", 48, 0, 48 );
+  TH1D*                strips_eta_p_layer1    = new TH1D( "strips_eta_p_layer1", "strips_eta_p_layer1", 48, 0, 48 );
+  TH1D*                strips_eta_p_layer2    = new TH1D( "strips_eta_p_layer2", "strips_eta_p_layer2", 48, 0, 48 );
+  TH1D*                strips_eta_m_layer0    = new TH1D( "strips_eta_m_layer0", "strips_eta_m_layer0", 48, 0, 48 );
+  TH1D*                strips_eta_m_layer1    = new TH1D( "strips_eta_m_layer1", "strips_eta_m_layer1", 48, 0, 48 );
+  TH1D*                strips_eta_m_layer2    = new TH1D( "strips_eta_m_layer2", "strips_eta_m_layer2", 48, 0, 48 );
   int                  trig_evts{ 0 };
   // Efficiency stufs
   std::array<TH1F*, 3> hEff1;
@@ -1274,12 +1274,12 @@ private:
   std::vector<int>                          clus_totSum;
   std::vector<int>                          clus_dt_trig;
   std::vector<int>                          clus_size;
-  TH1D                                      cluster_size_eta_p_ly0{ "cluster_size_eta_p_ly0", "cluster_size_eta_p_ly0", 10, 0, 10 };
-  TH1D                                      cluster_size_eta_p_ly1{ "cluster_size_eta_p_ly1", "cluster_size_eta_p_ly1", 10, 0, 10 };
-  TH1D                                      cluster_size_eta_p_ly2{ "cluster_size_eta_p_ly2", "cluster_size_eta_p_ly2", 10, 0, 10 };
-  TH1D                                      cluster_size_eta_m_ly0{ "cluster_size_eta_m_ly0", "cluster_size_eta_m_ly0", 10, 0, 10 };
-  TH1D                                      cluster_size_eta_m_ly1{ "cluster_size_eta_m_ly1", "cluster_size_eta_m_ly1", 10, 0, 10 };
-  TH1D                                      cluster_size_eta_m_ly2{ "cluster_size_eta_m_ly2", "cluster_size_eta_m_ly2", 10, 0, 10 };
+  TH1D*                                     cluster_size_eta_p_ly0 = new TH1D( "cluster_size_eta_p_ly0", "cluster_size_eta_p_ly0", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_p_ly1 = new TH1D( "cluster_size_eta_p_ly1", "cluster_size_eta_p_ly1", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_p_ly2 = new TH1D( "cluster_size_eta_p_ly2", "cluster_size_eta_p_ly2", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_m_ly0 = new TH1D( "cluster_size_eta_m_ly0", "cluster_size_eta_m_ly0", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_m_ly1 = new TH1D( "cluster_size_eta_m_ly1", "cluster_size_eta_m_ly1", 10, 0, 10 );
+  TH1D*                                     cluster_size_eta_m_ly2 = new TH1D( "cluster_size_eta_m_ly2", "cluster_size_eta_m_ly2", 10, 0, 10 );
   std::map<std::string, std::map<int, int>> good_hits;                                                                                                             //good hit event counters for efficiency computation
   std::map<std::string, std::map<int, int>> good_triggers     = { { "eta_p", { { 0, 0 }, { 1, 0 }, { 2, 0 } } }, { "eta_m", { { 0, 0 }, { 1, 0 }, { 2, 0 } } } };  //good triggered event counters for efficiency computation
   std::map<int, int>                        good_triggers_OR  = { { 0, 0 }, { 1, 0 }, { 2, 0 } };
